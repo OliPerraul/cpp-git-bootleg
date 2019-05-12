@@ -1,11 +1,7 @@
-#include <iostream>
-
-#include <dummy.h>
-
-#include <iostream>
 #include <boost/program_options.hpp>
-
-#include <dummy.h>
+#include "GitusService.h"
+#include <iostream>
+#include "boost/filesystem.hpp"
 
 // TODO: use boost::program_options::value<int>() for args
 void init(bool res)
@@ -29,13 +25,17 @@ void add(bool res)
 	std::cin >> x;
 }
 
-
 int main(int argc, char **argv)
 {
 	using namespace boost::program_options;
 
 	try
 	{
+		GitusService* gitusService = &GitusService();
+		std::cout << "Current Dir: " << boost::filesystem::current_path() << std::endl;
+		bool u = gitusService->InitRepo();
+		std::cout << u << std::endl;
+
 		std::cout << argv[1] << std::endl;
 
 		options_description description("Allowed options");
@@ -67,6 +67,11 @@ int main(int argc, char **argv)
 		std::cerr << "Error: " << ex.what() << std::endl;
 		return 1;
 	}
-	
+
+	if (argc <= 1) {
+		std::cout << "You must enter a command" << std::endl;
+		return 1;
+	}
+
 	return 0;
 }
