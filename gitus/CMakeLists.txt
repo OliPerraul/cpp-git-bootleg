@@ -25,17 +25,14 @@ set( Boost_USE_MULTITHREADED ON )
 add_definitions(-DBOOST_ALL_NO_LIB)
 
 find_package(Boost REQUIRED COMPONENTS program_options filesystem)
-include_directories(${BOOST_INCLUDE_DIRS})
 message("boost lib: ${Boost_LIBRARIES}")
 
-add_executable(gitus gitus.cpp)
+add_executable(gitus commands.h commands.cpp gitus.cpp gitus_service.h)
 
 target_include_directories(gitus 
     PRIVATE 
         ${Boost_INCLUDE_DIRS}
 )
-
-
 
 target_link_libraries(gitus
         ${Boost_LIBRARIES}
