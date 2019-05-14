@@ -1,4 +1,4 @@
-﻿
+
 #include <memory>
 #include <iostream>
 
@@ -27,7 +27,7 @@ bool InitCommand::_FileExist(std::string filePath) {
 }
 
 bool InitCommand::_IsArleadyInitialize() {
-	boost::filesystem::path p = "gitus/";
+	boost::filesystem::path p = ".git/";
 	return boost::filesystem::is_directory(p);
 }
 
