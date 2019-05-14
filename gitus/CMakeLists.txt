@@ -21,6 +21,7 @@ set(Boost_LIBRARY_DIRS C:/boost_1_70_0/stage/lib)
 set(Boost_USE_STATIC_LIBS ON) # operraul: Added this line
 set( Boost_USE_MULTITHREADED ON )
 
+
 # See https://stackoverflow.com/questions/18583800/cmake-error-the-following-boost-libraries-could-not-be-found
 add_definitions(-DBOOST_ALL_NO_LIB)
 
@@ -38,3 +39,5 @@ target_link_libraries(gitus
         ${Boost_LIBRARIES}
 
 )
+
+

@@ -6,12 +6,15 @@
 
 #include <memory>
 #include <vector>
-//#include <zl>
 
 
 #include <boost/uuid/uuid.hpp>
 #include <boost/uuid/detail/sha1.hpp>
 #include <boost/filesystem.hpp>
+
+#define INDEX_FORMAT_VERSION 2
+
+static const char DirCacheSignature[4] = { 'D', 'I', 'R', 'C' };
 
 
 // Highly simplified .git/index entry
@@ -23,9 +26,41 @@
 //	Per entry
 //		path
 //		sha1
+
+//https://mincong-h.github.io/2018/04/28/git-index/
 struct IndexEntry
 {
+	// the last time a file’s metadata changed
+	size_t ctime = 0;
+	// nanosecond fractions
+	size_t ctime_frac = 0;
+	// the last time a file’s data changed
+	size_t mtime = 0;
+	// nanosecond fractions
+	size_t mtime_frac = 0;
+	// The device (disk) upon which file resides
+	size_t device = 0;
+
+	// The file inode number. 
+	size_t inode_number = 0;
+
+	// hexadecimal representation of file permission
+	size_t permission_mode = 0;
+
+	// The user identifier of the current user
+	size_t uid = 0;
+
+	// The group identifier of the current user
+	size_t gid = 0;
+
+	// file size in number of bytes
+	size_t file_size = 0;
+
 	std::string sha1;
+
+	// set of flags which are used during merge operations
+	unsigned short flags;
+
 	std::string path;
 };
 
@@ -76,7 +111,7 @@ public:
 	}
 
 
-	static std::string Sha1(std::string object)
+	static std::string Sha1(const std::vector<char>& object)
 	{
 		boost::uuids::detail::sha1 sha1;
 		sha1.process_bytes(object.data(), sizeof(char)*object.size());
@@ -132,7 +167,7 @@ public:
 		}
 
 		std::string content = header + object;
-		auto sha1 = Sha1(content);
+		auto sha1 = Sha1(*GetChars(content));
 		if (write)
 		{
 
@@ -153,6 +188,20 @@ public:
 
 	}
 
+	// Extracts non null chars from null terminated string
+	static std::unique_ptr<std::vector<char>> GetChars(const std::string& str)
+	{
+		auto bytes = std::unique_ptr<std::vector<char>>(new std::vector<char>());
+		// Get chars without null-terminated char
+		for (int i = 0; i < str.size() - 1; i++)
+		{
+			bytes->push_back(str.data()[i]);
+		}
+
+		return bytes;
+	}
+	
+	
 	/*
 	def write_index(entries):
     """Write list of IndexEntry objects to git index file."""
@@ -173,25 +222,94 @@ public:
 	*/
 
 	// header = struct.pack('!4sLL', b'DIRC', 2, len(entries))
+	// TODO do not care about null terminated strings?
 	static void WriteIndex(const std::unique_ptr<std::vector<IndexEntry>>& entries)
 	{
+		using namespace std;
+		using namespace boost;
+
 		// number of entries
-		std::string content;
-		content.append(std::to_string(entries->size()));
-		std::string delim("\n");
+		string entries_data;
+
+		//content.append(std::to_string(entries->size()));
+		// Write entries to file, filling up unknowns with 0s
+		char buffer[4];
+		size_t fields[10];
 		for (auto entry = entries->begin(); entry != entries->end(); entry++)
 		{
-			content.append(delim + entry->sha1);
-			content.append(delim + entry->path);
+			fields[0] = entry->ctime;
+			fields[1] = entry->ctime_frac;
+			fields[2] = entry->mtime;
+			fields[3] = entry->mtime_frac;
+			fields[4] = entry->device;
+			fields[5] = entry->inode_number;
+			fields[6] = entry->permission_mode;
+			fields[7] = entry->uid;
+			fields[8] = entry->gid;
+			fields[9] = entry->file_size;
+
+			for (int i = 0; i < 10; i++)
+			{
+				memcpy(buffer, &fields[i], 4);
+				copy(
+					begin(buffer),
+					end(buffer),
+					back_inserter(entries_data));
+			}
+
+			entries_data += entry->sha1;
+
+			memcpy(buffer, &entry->flags, 4);
+			copy(
+				begin(buffer),
+				end(buffer),
+				back_inserter(entries_data));
+
+			entries_data += entry->path;
 		}
 
-		// 160 bit sha1 over the content (checksum)
-		auto digest = Sha1(content);
-		content = content.append(delim + digest);
+		// A 12 - byte header consisting of a 4 - byte signature “DIRC”(0x44495243) 
+		// standing for DirCache; 4 - byte version number “2”(0x00000002), which is 
+		// the current version of Git index format; 32 - bit number of index entries
 
-		auto stream = std::fstream(IndexFile().string());
-		stream << content;
+		string header;
+
+		// Signature
+		copy(
+			begin(DirCacheSignature),
+			end(DirCacheSignature),
+			back_inserter(header));
+
+		// Format
+		size_t field = INDEX_FORMAT_VERSION;
+		memcpy(buffer, &field, 4);
+		copy(
+			begin(buffer),
+			end(buffer),
+			back_inserter(header));
+
+		// Number of entries
+		field = entries->size();
+		std::memcpy(buffer, &field, 4);
+		copy(
+			begin(buffer),
+			end(buffer),
+			back_inserter(header));
+	
+		string data = header + entries_data;
+		auto digest = Sha1(*GetChars(data));
+		std::ofstream outfile(IndexFile().string(), std::ofstream::binary);
+		outfile << entries_data + digest; //TODO null terminated ??
 	};
+
+
+	static std::string ReadBytes(std::string filename)
+	{
+		std::ifstream ifs(filename, std::ios::binary | std::ios::ate);
+		std::string content((std::istreambuf_iterator<char>(ifs)),
+			(std::istreambuf_iterator<char>()));
+		return content;
+	}
 
 	static std::string ReadFile(std::string filename)
 	{
@@ -201,34 +319,42 @@ public:
 		return content;
 	}
 
-
-
 	static std::unique_ptr<std::vector<IndexEntry>> ReadIndex()
 	{
-		auto entries = std::unique_ptr<std::vector<IndexEntry>>(new std::vector<IndexEntry>());
+		using namespace std;
+		using namespace boost;
 
-		if (boost::filesystem::exists(IndexFile()))
+		auto entries = unique_ptr<vector<IndexEntry>>(new vector<IndexEntry>());
+		return entries;// TODO
+
+		if (filesystem::exists(IndexFile()))
 		{
-			auto stream = std::ifstream(IndexFile().string());
-			std::string line;
-			std::getline(stream, line); // TODO: use the size? (first line)
-			std::istringstream iss(line);
-			int size;
-			iss >> size;
+			auto data = ReadBytes(IndexFile().string());
+			// TODO: validate checksum
+			
+			//data.
+			//
 
-			for (int i = 0; i < size; i++)
-			{
-				IndexEntry entry;
-				std::getline(stream, line);
-				iss = std::istringstream(line);
-				iss >> entry.sha1;
 
-				std::getline(stream, line);
-				iss = std::istringstream(line);
-				iss >> entry.sha1;
+			//auto stream = ifstream(IndexFile().string());
+			//string line;
+			//getline(stream, line); // TODO: use the size? (first line)
+			//istringstream iss(line);
+			//int size;
+			//iss >> size;
 
-				entries->push_back(entry);
-			}
+			//for (int i = 0; i < size; i++)
+			//{
+			//	IndexEntry entry;
+			//	getline(stream, line);
+			//	iss = istringstream(line);
+			//	iss >> entry.sha1;
+			//	getline(stream, line);
+			//	iss = istringstream(line);
+			//	iss >> entry.sha1;
+
+			//	entries->push_back(entry);
+			//}
 
 		}
 

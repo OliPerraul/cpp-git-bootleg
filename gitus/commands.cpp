@@ -4,6 +4,12 @@
 
 // Linux only
 //#include <stat.h>
+#include <sys/stat.h>
+#ifdef _WIN32
+
+#elif UNIX
+
+#endif
 
 #include <boost/filesystem.hpp>
 
@@ -73,16 +79,21 @@ bool InitCommand::Execute() {
 bool AddCommand::Execute() {
 
 	auto entries = GitusService::ReadIndex();
+
+// TODO enonce du devoir: Spécification technique: 'code portable'
+// TODO IndexEntry representation memoire dificile..
+//#ifdef _WIN32
+//	struct _stat buf;
+//	_stat(_pathspec.c_str(), &buf);
+//#elif UNIX
+//
+//#endif
+
+	// Add new entry
+	// TODO Fill up the other fields if IndexEntry?
 	IndexEntry entry;
-
-
-	auto statistics = sta
-
-
 	entry.path = _pathspec;
 	entry.sha1 = GitusService::HashObject(GitusService::ReadFile(_pathspec), GitusService::Blob, true);
-
-
 	entries->push_back(entry);
 
 	// Sort entries

@@ -8,7 +8,6 @@
 #include "gitus_service.h" //TODO use if state is shared across cmds
 
 
-
 std::unique_ptr<BaseCommand> ParseCommand(int argc, char **argv)
 {
 	namespace po = boost::program_options;
