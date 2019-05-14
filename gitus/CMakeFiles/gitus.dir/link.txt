@@ -1,0 +1,1 @@
+/usr/bin/c++     CMakeFiles/gitus.dir/commands.cpp.o CMakeFiles/gitus.dir/gitus.cpp.o  -o gitus /home/operrault/boost_1_70_0/stage/lib/libboost_program_options.a /home/operrault/boost_1_70_0/stage/lib/libboost_filesystem.a 

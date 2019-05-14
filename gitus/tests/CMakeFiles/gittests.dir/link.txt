@@ -1,0 +1,1 @@
+/usr/bin/c++     CMakeFiles/gittests.dir/dummytest.cpp.o  -o gittests /home/operrault/boost_1_70_0/stage/lib/libboost_unit_test_framework.a ../git/libgit.a 

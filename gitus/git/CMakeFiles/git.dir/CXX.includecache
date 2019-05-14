@@ -1,0 +1,14 @@
+#IncludeRegexLine: ^[ 	]*[#%][ 	]*(include|import)[ 	]*[<"]([^">]+)([">])
+
+#IncludeRegexScan: ^.*$
+
+#IncludeRegexComplain: ^$
+
+#IncludeRegexTransform: 
+
+/home/operrault/repos/igl601-tp1/gitus/git/dummy.cpp
+dummy.h
+/home/operrault/repos/igl601-tp1/gitus/git/dummy.h
+
+/home/operrault/repos/igl601-tp1/gitus/git/dummy.h
+

@@ -2,6 +2,8 @@
 #include <memory>
 #include <iostream>
 
+// Linux only
+//#include <stat.h>
 
 #include <boost/filesystem.hpp>
 
@@ -15,7 +17,7 @@
 bool InitCommand::_FileExist(std::string filePath) {
 	bool exist = boost::filesystem::exists(filePath);
 	return exist;
-		
+
 }
 
 bool InitCommand::_IsArleadyInitialize() {
@@ -32,8 +34,8 @@ bool InitCommand::Execute() {
 
 	boost::filesystem::create_directory(GitusService::GitusDirectory());
 	boost::filesystem::create_directory(GitusService::ObjectsDirectory());
+	boost::filesystem::create_directory(GitusService::RefsDirectory());
 	boost::filesystem::create_directory(GitusService::HeadsDirectory());
-	boost::filesystem::ofstream(GitusService::IndexFile().string());
 	boost::filesystem::ofstream(GitusService::HeadFile().string());
 	boost::filesystem::ofstream(GitusService::MasterFile().string());
 	return true;
@@ -72,8 +74,15 @@ bool AddCommand::Execute() {
 
 	auto entries = GitusService::ReadIndex();
 	IndexEntry entry;
+
+
+	auto statistics = sta
+
+
 	entry.path = _pathspec;
 	entry.sha1 = GitusService::HashObject(GitusService::ReadFile(_pathspec), GitusService::Blob, true);
+
+
 	entries->push_back(entry);
 
 	// Sort entries

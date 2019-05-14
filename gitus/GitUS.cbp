@@ -1,0 +1,255 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes" ?>
+<CodeBlocks_project_file>
+	<FileVersion major="1" minor="6" />
+	<Project>
+		<Option title="GitUS" />
+		<Option makefile_is_custom="1" />
+		<Option compiler="gcc" />
+		<Option virtualFolders="CMake Files/;CMake Files/git/;CMake Files/tests/;" />
+		<Build>
+			<Target title="all">
+				<Option type="4" />
+				<Option compiler="gcc" />
+				<MakeCommands>
+					<Build command='/usr/bin/make -j4 -f &quot;/home/operrault/repos/igl601-tp1/gitus/Makefile&quot;  VERBOSE=1 all' />
+					<CompileFile command='/usr/bin/make -j4 -f &quot;/home/operrault/repos/igl601-tp1/gitus/Makefile&quot;  VERBOSE=1 &quot;$file&quot;' />
+					<Clean command='/usr/bin/make -j4 -f &quot;/home/operrault/repos/igl601-tp1/gitus/Makefile&quot;  VERBOSE=1 clean' />
+					<DistClean command='/usr/bin/make -j4 -f &quot;/home/operrault/repos/igl601-tp1/gitus/Makefile&quot;  VERBOSE=1 clean' />
+					<AskRebuildNeeded command="$make -q -f $makefile $target" />
+					<SilentBuild command="$make -f $makefile $target &gt; $(CMD_NULL)" />
+				</MakeCommands>
+			</Target>
+			<Target title="rebuild_cache">
+				<Option type="4" />
+				<Option compiler="gcc" />
+				<MakeCommands>
+					<Build command='/usr/bin/make -j4 -f &quot;/home/operrault/repos/igl601-tp1/gitus/Makefile&quot;  VERBOSE=1 rebuild_cache' />
+					<CompileFile command='/usr/bin/make -j4 -f &quot;/home/operrault/repos/igl601-tp1/gitus/Makefile&quot;  VERBOSE=1 &quot;$file&quot;' />
+					<Clean command='/usr/bin/make -j4 -f &quot;/home/operrault/repos/igl601-tp1/gitus/Makefile&quot;  VERBOSE=1 clean' />
+					<DistClean command='/usr/bin/make -j4 -f &quot;/home/operrault/repos/igl601-tp1/gitus/Makefile&quot;  VERBOSE=1 clean' />
+					<AskRebuildNeeded command="$make -q -f $makefile $target" />
+					<SilentBuild command="$make -f $makefile $target &gt; $(CMD_NULL)" />
+				</MakeCommands>
+			</Target>
+			<Target title="edit_cache">
+				<Option type="4" />
+				<Option compiler="gcc" />
+				<MakeCommands>
+					<Build command='/usr/bin/make -j4 -f &quot;/home/operrault/repos/igl601-tp1/gitus/Makefile&quot;  VERBOSE=1 edit_cache' />
+					<CompileFile command='/usr/bin/make -j4 -f &quot;/home/operrault/repos/igl601-tp1/gitus/Makefile&quot;  VERBOSE=1 &quot;$file&quot;' />
+					<Clean command='/usr/bin/make -j4 -f &quot;/home/operrault/repos/igl601-tp1/gitus/Makefile&quot;  VERBOSE=1 clean' />
+					<DistClean command='/usr/bin/make -j4 -f &quot;/home/operrault/repos/igl601-tp1/gitus/Makefile&quot;  VERBOSE=1 clean' />
+					<AskRebuildNeeded command="$make -q -f $makefile $target" />
+					<SilentBuild command="$make -f $makefile $target &gt; $(CMD_NULL)" />
+				</MakeCommands>
+			</Target>
+			<Target title="gitus">
+				<Option output="/home/operrault/repos/igl601-tp1/gitus/gitus" prefix_auto="0" extension_auto="0" />
+				<Option working_dir="/home/operrault/repos/igl601-tp1/gitus" />
+				<Option object_output="./" />
+				<Option type="1" />
+				<Option compiler="gcc" />
+				<Option parameters="init" />
+				<Compiler>
+					<Add option="-DBOOST_ALL_NO_LIB" />
+					<Add directory="/home/operrault/boost_1_70_0" />
+					<Add directory="/usr/include/c++/7" />
+					<Add directory="/usr/include/x86_64-linux-gnu/c++/7" />
+					<Add directory="/usr/include/c++/7/backward" />
+					<Add directory="/usr/lib/gcc/x86_64-linux-gnu/7/include" />
+					<Add directory="/usr/local/include" />
+					<Add directory="/usr/lib/gcc/x86_64-linux-gnu/7/include-fixed" />
+					<Add directory="/usr/include/x86_64-linux-gnu" />
+					<Add directory="/usr/include" />
+				</Compiler>
+				<MakeCommands>
+					<Build command='/usr/bin/make -j4 -f &quot;/home/operrault/repos/igl601-tp1/gitus/Makefile&quot;  VERBOSE=1 gitus' />
+					<CompileFile command='/usr/bin/make -j4 -f &quot;/home/operrault/repos/igl601-tp1/gitus/Makefile&quot;  VERBOSE=1 &quot;$file&quot;' />
+					<Clean command='/usr/bin/make -j4 -f &quot;/home/operrault/repos/igl601-tp1/gitus/Makefile&quot;  VERBOSE=1 clean' />
+					<DistClean command='/usr/bin/make -j4 -f &quot;/home/operrault/repos/igl601-tp1/gitus/Makefile&quot;  VERBOSE=1 clean' />
+					<AskRebuildNeeded command="$make -q -f $makefile $target" />
+					<SilentBuild command="$make -f $makefile $target &gt; $(CMD_NULL)" />
+				</MakeCommands>
+			</Target>
+			<Target title="gitus/fast">
+				<Option output="/home/operrault/repos/igl601-tp1/gitus/gitus" prefix_auto="0" extension_auto="0" />
+				<Option working_dir="/home/operrault/repos/igl601-tp1/gitus" />
+				<Option object_output="./" />
+				<Option type="1" />
+				<Option compiler="gcc" />
+				<Compiler>
+					<Add option="-DBOOST_ALL_NO_LIB" />
+					<Add directory="/home/operrault/boost_1_70_0" />
+					<Add directory="/usr/include/c++/7" />
+					<Add directory="/usr/include/x86_64-linux-gnu/c++/7" />
+					<Add directory="/usr/include/c++/7/backward" />
+					<Add directory="/usr/lib/gcc/x86_64-linux-gnu/7/include" />
+					<Add directory="/usr/local/include" />
+					<Add directory="/usr/lib/gcc/x86_64-linux-gnu/7/include-fixed" />
+					<Add directory="/usr/include/x86_64-linux-gnu" />
+					<Add directory="/usr/include" />
+				</Compiler>
+				<MakeCommands>
+					<Build command='/usr/bin/make -j4 -f &quot;/home/operrault/repos/igl601-tp1/gitus/Makefile&quot;  VERBOSE=1 gitus/fast' />
+					<CompileFile command='/usr/bin/make -j4 -f &quot;/home/operrault/repos/igl601-tp1/gitus/Makefile&quot;  VERBOSE=1 &quot;$file&quot;' />
+					<Clean command='/usr/bin/make -j4 -f &quot;/home/operrault/repos/igl601-tp1/gitus/Makefile&quot;  VERBOSE=1 clean' />
+					<DistClean command='/usr/bin/make -j4 -f &quot;/home/operrault/repos/igl601-tp1/gitus/Makefile&quot;  VERBOSE=1 clean' />
+					<AskRebuildNeeded command="$make -q -f $makefile $target" />
+					<SilentBuild command="$make -f $makefile $target &gt; $(CMD_NULL)" />
+				</MakeCommands>
+			</Target>
+			<Target title="test">
+				<Option type="4" />
+				<Option compiler="gcc" />
+				<MakeCommands>
+					<Build command='/usr/bin/make -j4 -f &quot;/home/operrault/repos/igl601-tp1/gitus/Makefile&quot;  VERBOSE=1 test' />
+					<CompileFile command='/usr/bin/make -j4 -f &quot;/home/operrault/repos/igl601-tp1/gitus/Makefile&quot;  VERBOSE=1 &quot;$file&quot;' />
+					<Clean command='/usr/bin/make -j4 -f &quot;/home/operrault/repos/igl601-tp1/gitus/Makefile&quot;  VERBOSE=1 clean' />
+					<DistClean command='/usr/bin/make -j4 -f &quot;/home/operrault/repos/igl601-tp1/gitus/Makefile&quot;  VERBOSE=1 clean' />
+					<AskRebuildNeeded command="$make -q -f $makefile $target" />
+					<SilentBuild command="$make -f $makefile $target &gt; $(CMD_NULL)" />
+				</MakeCommands>
+			</Target>
+			<Target title="git">
+				<Option output="/home/operrault/repos/igl601-tp1/gitus/git/libgit.a" prefix_auto="0" extension_auto="0" />
+				<Option working_dir="" />
+				<Option object_output="./" />
+				<Option type="2" />
+				<Option compiler="gcc" />
+				<Compiler>
+					<Add directory="/home/operrault/repos/igl601-tp1/gitus/git" />
+					<Add directory="/usr/include/c++/7" />
+					<Add directory="/usr/include/x86_64-linux-gnu/c++/7" />
+					<Add directory="/usr/include/c++/7/backward" />
+					<Add directory="/usr/lib/gcc/x86_64-linux-gnu/7/include" />
+					<Add directory="/usr/local/include" />
+					<Add directory="/usr/lib/gcc/x86_64-linux-gnu/7/include-fixed" />
+					<Add directory="/usr/include/x86_64-linux-gnu" />
+					<Add directory="/usr/include" />
+				</Compiler>
+				<MakeCommands>
+					<Build command='/usr/bin/make -j4 -f &quot;/home/operrault/repos/igl601-tp1/gitus/git/Makefile&quot;  VERBOSE=1 git' />
+					<CompileFile command='/usr/bin/make -j4 -f &quot;/home/operrault/repos/igl601-tp1/gitus/git/Makefile&quot;  VERBOSE=1 &quot;$file&quot;' />
+					<Clean command='/usr/bin/make -j4 -f &quot;/home/operrault/repos/igl601-tp1/gitus/git/Makefile&quot;  VERBOSE=1 clean' />
+					<DistClean command='/usr/bin/make -j4 -f &quot;/home/operrault/repos/igl601-tp1/gitus/git/Makefile&quot;  VERBOSE=1 clean' />
+					<AskRebuildNeeded command="$make -q -f $makefile $target" />
+					<SilentBuild command="$make -f $makefile $target &gt; $(CMD_NULL)" />
+				</MakeCommands>
+			</Target>
+			<Target title="git/fast">
+				<Option output="/home/operrault/repos/igl601-tp1/gitus/git/libgit.a" prefix_auto="0" extension_auto="0" />
+				<Option working_dir="" />
+				<Option object_output="./" />
+				<Option type="2" />
+				<Option compiler="gcc" />
+				<Compiler>
+					<Add directory="/home/operrault/repos/igl601-tp1/gitus/git" />
+					<Add directory="/usr/include/c++/7" />
+					<Add directory="/usr/include/x86_64-linux-gnu/c++/7" />
+					<Add directory="/usr/include/c++/7/backward" />
+					<Add directory="/usr/lib/gcc/x86_64-linux-gnu/7/include" />
+					<Add directory="/usr/local/include" />
+					<Add directory="/usr/lib/gcc/x86_64-linux-gnu/7/include-fixed" />
+					<Add directory="/usr/include/x86_64-linux-gnu" />
+					<Add directory="/usr/include" />
+				</Compiler>
+				<MakeCommands>
+					<Build command='/usr/bin/make -j4 -f &quot;/home/operrault/repos/igl601-tp1/gitus/git/Makefile&quot;  VERBOSE=1 git/fast' />
+					<CompileFile command='/usr/bin/make -j4 -f &quot;/home/operrault/repos/igl601-tp1/gitus/git/Makefile&quot;  VERBOSE=1 &quot;$file&quot;' />
+					<Clean command='/usr/bin/make -j4 -f &quot;/home/operrault/repos/igl601-tp1/gitus/git/Makefile&quot;  VERBOSE=1 clean' />
+					<DistClean command='/usr/bin/make -j4 -f &quot;/home/operrault/repos/igl601-tp1/gitus/git/Makefile&quot;  VERBOSE=1 clean' />
+					<AskRebuildNeeded command="$make -q -f $makefile $target" />
+					<SilentBuild command="$make -f $makefile $target &gt; $(CMD_NULL)" />
+				</MakeCommands>
+			</Target>
+			<Target title="gittests">
+				<Option output="/home/operrault/repos/igl601-tp1/gitus/tests/gittests" prefix_auto="0" extension_auto="0" />
+				<Option working_dir="/home/operrault/repos/igl601-tp1/gitus/tests" />
+				<Option object_output="./" />
+				<Option type="1" />
+				<Option compiler="gcc" />
+				<Compiler>
+					<Add directory="/home/operrault/repos/igl601-tp1/gitus/git" />
+					<Add directory="/home/operrault/boost_1_70_0" />
+					<Add directory="/usr/include/c++/7" />
+					<Add directory="/usr/include/x86_64-linux-gnu/c++/7" />
+					<Add directory="/usr/include/c++/7/backward" />
+					<Add directory="/usr/lib/gcc/x86_64-linux-gnu/7/include" />
+					<Add directory="/usr/local/include" />
+					<Add directory="/usr/lib/gcc/x86_64-linux-gnu/7/include-fixed" />
+					<Add directory="/usr/include/x86_64-linux-gnu" />
+					<Add directory="/usr/include" />
+				</Compiler>
+				<MakeCommands>
+					<Build command='/usr/bin/make -j4 -f &quot;/home/operrault/repos/igl601-tp1/gitus/tests/Makefile&quot;  VERBOSE=1 gittests' />
+					<CompileFile command='/usr/bin/make -j4 -f &quot;/home/operrault/repos/igl601-tp1/gitus/tests/Makefile&quot;  VERBOSE=1 &quot;$file&quot;' />
+					<Clean command='/usr/bin/make -j4 -f &quot;/home/operrault/repos/igl601-tp1/gitus/tests/Makefile&quot;  VERBOSE=1 clean' />
+					<DistClean command='/usr/bin/make -j4 -f &quot;/home/operrault/repos/igl601-tp1/gitus/tests/Makefile&quot;  VERBOSE=1 clean' />
+					<AskRebuildNeeded command="$make -q -f $makefile $target" />
+					<SilentBuild command="$make -f $makefile $target &gt; $(CMD_NULL)" />
+				</MakeCommands>
+			</Target>
+			<Target title="gittests/fast">
+				<Option output="/home/operrault/repos/igl601-tp1/gitus/tests/gittests" prefix_auto="0" extension_auto="0" />
+				<Option working_dir="/home/operrault/repos/igl601-tp1/gitus/tests" />
+				<Option object_output="./" />
+				<Option type="1" />
+				<Option compiler="gcc" />
+				<Compiler>
+					<Add directory="/home/operrault/repos/igl601-tp1/gitus/git" />
+					<Add directory="/home/operrault/boost_1_70_0" />
+					<Add directory="/usr/include/c++/7" />
+					<Add directory="/usr/include/x86_64-linux-gnu/c++/7" />
+					<Add directory="/usr/include/c++/7/backward" />
+					<Add directory="/usr/lib/gcc/x86_64-linux-gnu/7/include" />
+					<Add directory="/usr/local/include" />
+					<Add directory="/usr/lib/gcc/x86_64-linux-gnu/7/include-fixed" />
+					<Add directory="/usr/include/x86_64-linux-gnu" />
+					<Add directory="/usr/include" />
+				</Compiler>
+				<MakeCommands>
+					<Build command='/usr/bin/make -j4 -f &quot;/home/operrault/repos/igl601-tp1/gitus/tests/Makefile&quot;  VERBOSE=1 gittests/fast' />
+					<CompileFile command='/usr/bin/make -j4 -f &quot;/home/operrault/repos/igl601-tp1/gitus/tests/Makefile&quot;  VERBOSE=1 &quot;$file&quot;' />
+					<Clean command='/usr/bin/make -j4 -f &quot;/home/operrault/repos/igl601-tp1/gitus/tests/Makefile&quot;  VERBOSE=1 clean' />
+					<DistClean command='/usr/bin/make -j4 -f &quot;/home/operrault/repos/igl601-tp1/gitus/tests/Makefile&quot;  VERBOSE=1 clean' />
+					<AskRebuildNeeded command="$make -q -f $makefile $target" />
+					<SilentBuild command="$make -f $makefile $target &gt; $(CMD_NULL)" />
+				</MakeCommands>
+			</Target>
+		</Build>
+		<Unit filename="CMakeLists.txt">
+			<Option virtualFolder="CMake Files/" />
+		</Unit>
+		<Unit filename="commands.cpp">
+			<Option target="gitus" />
+		</Unit>
+		<Unit filename="commands.h">
+			<Option target="gitus" />
+		</Unit>
+		<Unit filename="git/CMakeLists.txt">
+			<Option virtualFolder="CMake Files/git/" />
+		</Unit>
+		<Unit filename="git/dummy.cpp">
+			<Option target="git" />
+		</Unit>
+		<Unit filename="git/dummy.h">
+			<Option target="git" />
+		</Unit>
+		<Unit filename="gitus.cpp">
+			<Option target="gitus" />
+		</Unit>
+		<Unit filename="gitus_service.h">
+			<Option target="gitus" />
+		</Unit>
+		<Unit filename="tests/CMakeLists.txt">
+			<Option virtualFolder="CMake Files/tests/" />
+		</Unit>
+		<Unit filename="tests/dummytest.cpp">
+			<Option target="gittests" />
+		</Unit>
+		<Extensions>
+			<code_completion />
+			<debugger />
+		</Extensions>
+	</Project>
+</CodeBlocks_project_file>

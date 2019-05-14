@@ -1,0 +1,2 @@
+/usr/bin/ar qc libgit.a  CMakeFiles/git.dir/dummy.cpp.o
+/usr/bin/ranlib libgit.a

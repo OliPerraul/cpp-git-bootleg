@@ -16,7 +16,7 @@
 
 // Highly simplified .git/index entry
 //(working on windows was difficult to obtain all the info i wanted)
-//	We only encode 
+//	We only encode
 //	Per Index
 //		size
 //		digest
@@ -42,37 +42,37 @@ public:
 
 	static boost::filesystem::path IndexFile()
 	{
-		return boost::filesystem::current_path().concat(".git/index").string();
+		return boost::filesystem::current_path()/".git/index";
 	}
 
 	static boost::filesystem::path HeadFile()
 	{
-		return boost::filesystem::current_path().concat(".git/HEAD").string();
+		return boost::filesystem::current_path()/".git/HEAD";
 	}
 
 	static boost::filesystem::path GitusDirectory()
 	{
-		return boost::filesystem::current_path().concat(".git/").string();
+		return boost::filesystem::current_path()/".git/";
 	}
 
 	static boost::filesystem::path RefsDirectory()
 	{
-		return boost::filesystem::current_path().concat(".git/refs/").string();
+		return boost::filesystem::current_path()/".git/refs/";
 	}
 
 	static boost::filesystem::path HeadsDirectory()
 	{
-		return boost::filesystem::current_path().concat(".git/refs/heads/").string();		
+		return boost::filesystem::current_path()/".git/refs/heads/";
 	}
 
 	static boost::filesystem::path MasterFile()
 	{
-		return boost::filesystem::current_path().concat(".git/refs/heads/master").string();
+		return boost::filesystem::current_path()/".git/refs/heads/master";
 	}
 
 	static boost::filesystem::path ObjectsDirectory()
 	{
-		return boost::filesystem::current_path().concat(".git/objects/").string();
+		return boost::filesystem::current_path()/".git/objects/";
 	}
 
 
@@ -132,16 +132,16 @@ public:
 		}
 
 		std::string content = header + object;
-
 		auto sha1 = Sha1(content);
 		if (write)
 		{
+
 			auto file = ObjectsDirectory()
-				.append(filesystem::path(sha1.substr(0, 2)))
-				.append(sha1.substr(2, string::npos)) ;
+				/filesystem::path(sha1.substr(0, 2))
+				/filesystem::path(sha1.substr(2, string::npos));
 
 			auto stream = std::fstream(file.string());
-			stream << content;	
+			stream << content;
 		}
 
 		return sha1;
@@ -206,7 +206,7 @@ public:
 	static std::unique_ptr<std::vector<IndexEntry>> ReadIndex()
 	{
 		auto entries = std::unique_ptr<std::vector<IndexEntry>>(new std::vector<IndexEntry>());
-		
+
 		if (boost::filesystem::exists(IndexFile()))
 		{
 			auto stream = std::ifstream(IndexFile().string());

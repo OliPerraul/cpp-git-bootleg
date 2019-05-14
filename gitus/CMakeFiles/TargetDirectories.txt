@@ -1,0 +1,12 @@
+/home/operrault/repos/igl601-tp1/gitus/CMakeFiles/rebuild_cache.dir
+/home/operrault/repos/igl601-tp1/gitus/CMakeFiles/edit_cache.dir
+/home/operrault/repos/igl601-tp1/gitus/CMakeFiles/gitus.dir
+/home/operrault/repos/igl601-tp1/gitus/CMakeFiles/test.dir
+/home/operrault/repos/igl601-tp1/gitus/git/CMakeFiles/rebuild_cache.dir
+/home/operrault/repos/igl601-tp1/gitus/git/CMakeFiles/edit_cache.dir
+/home/operrault/repos/igl601-tp1/gitus/git/CMakeFiles/git.dir
+/home/operrault/repos/igl601-tp1/gitus/git/CMakeFiles/test.dir
+/home/operrault/repos/igl601-tp1/gitus/tests/CMakeFiles/rebuild_cache.dir
+/home/operrault/repos/igl601-tp1/gitus/tests/CMakeFiles/edit_cache.dir
+/home/operrault/repos/igl601-tp1/gitus/tests/CMakeFiles/gittests.dir
+/home/operrault/repos/igl601-tp1/gitus/tests/CMakeFiles/test.dir
