@@ -12,47 +12,16 @@
 
 //-- Init
 
-bool InitCommand::_FileInStaging(std::string fileName) {
-	return false;
-}
-
 bool InitCommand::_FileExist(std::string filePath) {
 	bool exist = boost::filesystem::exists(filePath);
 	return exist;
-	
-	
-}
-
-bool InitCommand::AddFileToStaging(std::string filePath) {
-	//Check if actualFile exist
-	if (!_FileExist(filePath)) {
-		return false;
-
-	
-	}
-
-	std::string fileName = boost::filesystem::path(filePath).filename().string();
-	//Check si dans staging || local un file avec meme hash
-		//yes:: do nothing return true
-	//add file to staging (replace if one same name)
-	return false;
-
+		
 }
 
 bool InitCommand::_IsArleadyInitialize() {
 	boost::filesystem::path p = "gitus/";
 	return boost::filesystem::is_directory(p);
 }
-
-
-
-std::string InitCommand::GetHeadFilePath() {
-	std::string path;
-	path = "gitus/refs/master";
-	return path;
-}
-
-
 
 
 bool InitCommand::Execute() {
@@ -104,7 +73,7 @@ bool AddCommand::Execute() {
 	auto entries = GitusService::ReadIndex();
 	IndexEntry entry;
 	entry.path = _pathspec;
-	entry.sha1 = GitusService::HashObject(GitusService::ReadBytes(_pathspec), GitusService::Blob, true);
+	entry.sha1 = GitusService::HashObject(GitusService::ReadFile(_pathspec), GitusService::Blob, true);
 	entries->push_back(entry);
 
 	// Sort entries
@@ -118,6 +87,8 @@ bool AddCommand::Execute() {
 
 	return true;
 }
+
+
 
 
 //--- Commit

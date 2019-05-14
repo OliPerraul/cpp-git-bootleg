@@ -2,9 +2,11 @@
 #define GITUS_SERVICE_H
 
 #include <iostream>
+#include <sstream>
 
 #include <memory>
 #include <vector>
+//#include <zl>
 
 
 #include <boost/uuid/uuid.hpp>
@@ -107,42 +109,48 @@ public:
 				return sha1
 */
 
-	static std::string HashObject(std::vector<char> object, ObjectHashType type, bool write)
+	// Simplified hashing
+	static std::string HashObject(std::string object, ObjectHashType type, bool write=true)
 	{
+		using namespace std;
+		using namespace boost;
+
+		std::string header;
+		switch (type)
+		{
+		case GitusService::Blob:
+			header = "blob";
+			break;
+		case GitusService::Commit:
+			header = "commit";
+			break;
+		case GitusService::Tree:
+			header = "tree";
+			break;
+		default:
+			break;
+		}
+
+		std::string content = header + object;
+
+		auto sha1 = Sha1(content);
 		if (write)
 		{
-			ObjectsDirectory().concat()
-				if (boost::filesystem::exists(path))
-				{
+			auto file = ObjectsDirectory()
+				.append(filesystem::path(sha1.substr(0, 2)))
+				.append(sha1.substr(2, string::npos)) ;
 
-
-				}
-		
+			auto stream = std::fstream(file.string());
+			stream << content;	
 		}
-	}
 
+		return sha1;
+	}
 
 
 	static std::string ReadObject(std::string object)
 	{
 
-	}
-
-
-
-	static std::vector<char> ReadBytes(std::string filename)
-	{
-		using namespace std;
-
-		ifstream ifs(filename, ios::binary | ios::ate);
-		ifstream::pos_type pos = ifs.tellg();
-
-		std::vector<char>  result(pos);
-
-		ifs.seekg(0, ios::beg);
-		ifs.read(&result[0], pos);
-
-		return result;
 	}
 
 	/*
@@ -169,39 +177,58 @@ public:
 	{
 		// number of entries
 		std::string content;
-
-		char size = entries->size();
-		content.push_back(size);
-		for (auto entry = entries->begin(); entry != entries->end; entry++)
+		content.append(std::to_string(entries->size()));
+		std::string delim("\n");
+		for (auto entry = entries->begin(); entry != entries->end(); entry++)
 		{
-			for (int i = 0; i < entry->sha1.size(); i++)
-			{
-				content.push_back(entry->sha1[i]);
-			}
-
-			for (int i = 0; i < entry->path.size(); i++)
-			{
-				content.push_back(entry->path[i]);
-			}
+			content.append(delim + entry->sha1);
+			content.append(delim + entry->path);
 		}
 
 		// 160 bit sha1 over the content (checksum)
 		auto digest = Sha1(content);
-		content = content.append(digest);
+		content = content.append(delim + digest);
 
-		auto stream = std::fstream(IndexFile().string(), std::ios::binary);
-		stream.write(content.c_str(), content.size() * sizeof(char))
-
+		auto stream = std::fstream(IndexFile().string());
+		stream << content;
 	};
+
+	static std::string ReadFile(std::string filename)
+	{
+		std::ifstream ifs(filename);
+		std::string content((std::istreambuf_iterator<char>(ifs)),
+			(std::istreambuf_iterator<char>()));
+		return content;
+	}
+
 
 
 	static std::unique_ptr<std::vector<IndexEntry>> ReadIndex()
 	{
 		auto entries = std::unique_ptr<std::vector<IndexEntry>>(new std::vector<IndexEntry>());
-
+		
 		if (boost::filesystem::exists(IndexFile()))
 		{
+			auto stream = std::ifstream(IndexFile().string());
+			std::string line;
+			std::getline(stream, line); // TODO: use the size? (first line)
+			std::istringstream iss(line);
+			int size;
+			iss >> size;
 
+			for (int i = 0; i < size; i++)
+			{
+				IndexEntry entry;
+				std::getline(stream, line);
+				iss = std::istringstream(line);
+				iss >> entry.sha1;
+
+				std::getline(stream, line);
+				iss = std::istringstream(line);
+				iss >> entry.sha1;
+
+				entries->push_back(entry);
+			}
 
 		}
 

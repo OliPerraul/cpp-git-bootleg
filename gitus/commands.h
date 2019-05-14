@@ -37,13 +37,8 @@ public:
 
 class InitCommand : public BaseCommand {
 private:
-	const int InitMaxArgs = 0;
 	bool _IsArleadyInitialize();
 	bool _FileExist(std::string filePath);
-	bool _FileInStaging(std::string fileName);
-	bool AddFileToStaging(std::string filePath);
-	std::string GetHeadFilePath();
-
 public:
 	
 	virtual bool Execute() override;
@@ -77,7 +72,6 @@ public:
 
 
 //--- Commit
-
 class CommitCommandHelp : public BaseCommand {
 public:
 	virtual bool Execute() override
