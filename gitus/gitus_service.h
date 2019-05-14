@@ -170,13 +170,19 @@ public:
 		auto sha1 = Sha1(*GetChars(content));
 		if (write)
 		{
+			std::string first = sha1.substr(0, 2);
+			std::string last = sha1.substr(2, string::npos);
 
-			auto file = ObjectsDirectory()
-				/filesystem::path(sha1.substr(0, 2))
-				/filesystem::path(sha1.substr(2, string::npos));
+			auto filePath = ObjectsDirectory()
+				/ first / last;
 
-			auto stream = std::fstream(file.string());
-			stream << content;
+			if (!filesystem::exists(filePath)) {
+				filesystem::create_directories(filePath);
+				filesystem::ofstream ofs{ filePath / last };
+				ofs << content;
+			}
+
+
 		}
 
 		return sha1;
