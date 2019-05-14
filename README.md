@@ -18,3 +18,20 @@ https://www.youtube.com/watch?v=_lKxJjV8r3Y
 TODO
 Il ne suffit que de s'inspirer de ce fichier
 https://github.com/benhoyt/pygit/blob/aa8d8bb62ae273ae2f4f167e36f24f40a11634b9/pygit.py
+
+
+
+//.git/index
+https://mincong-h.github.io/2018/04/28/git-index/
+
+
+// info qu'on devrait stocker a la place (mais on met zero)
+https://en.wikipedia.org/wiki/Stat_(system_call)
+
+
+// Pygit
+https://github.com/benhoyt/pygit/blob/master/pygit.py
+
+
+// Pygit guide
+https://benhoyt.com/writings/pygit/
