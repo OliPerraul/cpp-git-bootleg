@@ -409,9 +409,26 @@ public:
 
 		return entries;
 	};
+	static std::string CreateCommitTree() {
+		auto index = GitusService::ReadIndex();
+		std::string treeEntries;
+		for (auto it = index->begin(); it != index->end(); it++)
+		{
+			std::string currentEntry;
+			auto* entry = &it->second;
+			currentEntry += entry->permission_mode + " ";
+			//TODO::FIND Real way...
+			currentEntry += "blob ";
+			currentEntry += entry->sha1 + ' ';
+			currentEntry += entry->path;
+			currentEntry += '\n';
 
-
+			treeEntries += currentEntry;
+		}
+		return treeEntries;
+	}
 };
+
 
 #endif
 

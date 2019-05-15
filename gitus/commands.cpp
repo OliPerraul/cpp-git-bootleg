@@ -100,7 +100,7 @@ bool AddCommand::Execute() {
 		auto indexedEntry = entries->at(_pathspec);
 		if (indexedEntry.sha1 == entry.sha1) {
 			std::cout << "The specified file is arleady added" << std::endl;
-			return;
+			return false;
 		}
 		entries->erase(_pathspec);
 	}
@@ -109,11 +109,11 @@ bool AddCommand::Execute() {
 	entries->insert(entryPair);
 
 	// Sort entries
-	sort(entries->begin(), entries->end(),
-		[](const IndexEntry & a, const IndexEntry & b) -> bool
-	{
-		return a.path > b.path;
-	});
+	//sort(entries->begin(), entries->end(),
+	//	[](const IndexEntry & a, const IndexEntry & b) -> bool
+	//{
+	//	return a.path > b.path;
+	//});
 
 	GitusService::WriteIndex(entries);
 
