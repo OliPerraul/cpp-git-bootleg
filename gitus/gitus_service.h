@@ -15,8 +15,8 @@
 #define INDEX_FORMAT_VERSION 2
 
 static const char DirCacheSignature[4] = { 'D', 'I', 'R', 'C' };
-
-
+static const size_t HeaderLength = 12;
+static const size_t EntryLength = 59;
 // Highly simplified .git/index entry
 //(working on windows was difficult to obtain all the info i wanted)
 //	We only encode
@@ -62,6 +62,18 @@ struct IndexEntry
 	unsigned short flags;
 
 	std::string path;
+	void SetEntryHeader(std::string header) {
+		this->ctime = header[0];
+		this->ctime_frac = header[1];
+		this->mtime = header[2];
+		this->mtime_frac = header[3];
+		this->device = header[4];
+		this->inode_number = header[5];
+		this->permission_mode = header[6];
+		this->uid = header[7];
+		this->gid = header[8];
+		this->file_size = header[9];
+	}
 };
 
 class GitusService {
@@ -187,7 +199,12 @@ public:
 
 		return sha1;
 	}
-
+	static::std::string GenerateEntryPadding(std::string entryPath) {
+		auto pathSize = entryPath.size();
+		auto pathOffset = ((EntryLength + pathSize + 8) / 8) * 8;
+		auto paddingLength = pathOffset - EntryLength - pathSize;
+		return std::string(paddingLength, '\0');
+	}
 
 	static std::string ReadObject(std::string object)
 	{
@@ -256,22 +273,17 @@ public:
 
 			for (int i = 0; i < 10; i++)
 			{
-				memcpy(buffer, &fields[i], 4);
-				copy(
-					begin(buffer),
-					end(buffer),
-					back_inserter(entries_data));
+				auto headerProperty = fields[i];
+				entries_data += std::to_string(headerProperty);
 			}
 
 			entries_data += entry->sha1;
 
-			memcpy(buffer, &entry->flags, 4);
-			copy(
-				begin(buffer),
-				end(buffer),
-				back_inserter(entries_data));
+			entries_data += std::to_string(entry->flags);
 
 			entries_data += entry->path;
+			auto entryPadding = GenerateEntryPadding(entry->path);
+			entries_data += entryPadding;
 		}
 
 		// A 12 - byte header consisting of a 4 - byte signature “DIRC”(0x44495243) 
@@ -305,13 +317,14 @@ public:
 		string data = header + entries_data;
 		auto digest = Sha1(*GetChars(data));
 		std::ofstream outfile(IndexFile().string(), std::ofstream::binary);
-		outfile << entries_data + digest; //TODO null terminated ??
+		auto outputText = data + digest; //TODO null terminated ??
+		outfile << outputText;
 	};
 
 
 	static std::string ReadBytes(std::string filename)
 	{
-		std::ifstream ifs(filename, std::ios::binary | std::ios::ate);
+		std::ifstream ifs(filename);
 		std::string content((std::istreambuf_iterator<char>(ifs)),
 			(std::istreambuf_iterator<char>()));
 		return content;
@@ -331,17 +344,41 @@ public:
 		using namespace boost;
 
 		auto entries = unique_ptr<vector<IndexEntry>>(new vector<IndexEntry>());
-		return entries;// TODO
 
 		if (filesystem::exists(IndexFile()))
 		{
 			auto data = ReadBytes(IndexFile().string());
-			// TODO: validate checksum
+			std::size_t fileLength = data.size();
+			string digest = data.substr(fileLength - 40);
+			string content = data.substr(0, fileLength  - 40);
+			string contentHash = Sha1(*GetChars(content));
+			if (contentHash != digest) {
+				throw std::exception("Index file got corrupted...");
+			}
 			
-			//data.
-			//
+			string indexEntries = content.substr(HeaderLength);
+			int i = 0;
+			while (i + EntryLength < indexEntries.size()) {
+				auto entryEnd = i + EntryLength;
+				auto entryContent = indexEntries.substr(i, entryEnd);
+				auto entryHeader = entryContent.substr(0, 10);
+				
+				IndexEntry* entry = new IndexEntry;
+				entry->SetEntryHeader(entryHeader);
+				entry->sha1 = entryContent.substr(10, 40);
+				//TODO:GET HOW FLAG GENERATED, ADD PADDING IF Required
+				auto flagString = entryContent.substr(50, 5);
+				entry->flags = std::stoul(flagString);
 
+				auto possiblePathRange = indexEntries.substr(55);
+				auto endOfPathIndex = possiblePathRange.find('\0');
+				endOfPathIndex = endOfPathIndex == std::string::npos ? 4 : endOfPathIndex;
+				entry->path = possiblePathRange.substr(0, endOfPathIndex);
+				entries->push_back(*entry);
 
+				auto currentEntryLength = ((EntryLength + entry->path.size() + 8) / 8) * 8;
+				i += currentEntryLength;
+			}
 			//auto stream = ifstream(IndexFile().string());
 			//string line;
 			//getline(stream, line); // TODO: use the size? (first line)
