@@ -80,6 +80,8 @@ bool AddCommand::Execute() {
 
 	auto entries = GitusService::ReadIndex();
 
+	
+
 // TODO enonce du devoir: Spécification technique: 'code portable'
 // TODO IndexEntry representation memoire dificile..
 //#ifdef _WIN32
@@ -94,7 +96,17 @@ bool AddCommand::Execute() {
 	IndexEntry entry;
 	entry.path = _pathspec;
 	entry.sha1 = GitusService::HashObject(GitusService::ReadFile(_pathspec), GitusService::Blob, true);
-	entries->push_back(entry);
+	if (entries->count(_pathspec) != 0) {
+		auto indexedEntry = entries->at(_pathspec);
+		if (indexedEntry.sha1 == entry.sha1) {
+			std::cout << "The specified file is arleady added" << std::endl;
+			return;
+		}
+		entries->erase(_pathspec);
+	}
+
+	auto entryPair = entry.GetEntryPair();
+	entries->insert(entryPair);
 
 	// Sort entries
 	sort(entries->begin(), entries->end(),

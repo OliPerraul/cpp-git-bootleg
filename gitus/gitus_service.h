@@ -74,6 +74,11 @@ struct IndexEntry
 		this->gid = header[8];
 		this->file_size = header[9];
 	}
+
+	std::pair<std::string, IndexEntry> GetEntryPair() {
+		auto pair = std::pair<std::string, IndexEntry>(this->path, *this);
+		return pair;
+	}
 };
 
 class GitusService {
@@ -186,15 +191,13 @@ public:
 			std::string last = sha1.substr(2, string::npos);
 
 			auto filePath = ObjectsDirectory()
-				/ first / last;
+				/ first;
 
 			if (!filesystem::exists(filePath)) {
 				filesystem::create_directories(filePath);
 				filesystem::ofstream ofs{ filePath / last };
 				ofs << content;
 			}
-
-
 		}
 
 		return sha1;
@@ -246,7 +249,7 @@ public:
 
 	// header = struct.pack('!4sLL', b'DIRC', 2, len(entries))
 	// TODO do not care about null terminated strings?
-	static void WriteIndex(const std::unique_ptr<std::vector<IndexEntry>>& entries)
+	static void WriteIndex(const std::unique_ptr<std::map<std::string, IndexEntry>>& entries)
 	{
 		using namespace std;
 		using namespace boost;
@@ -258,8 +261,9 @@ public:
 		// Write entries to file, filling up unknowns with 0s
 		char buffer[4];
 		size_t fields[10];
-		for (auto entry = entries->begin(); entry != entries->end(); entry++)
+		for (auto it = entries->begin(); it != entries->end(); it++)
 		{
+			auto* entry = &it->second;
 			fields[0] = entry->ctime;
 			fields[1] = entry->ctime_frac;
 			fields[2] = entry->mtime;
@@ -338,12 +342,12 @@ public:
 		return content;
 	}
 
-	static std::unique_ptr<std::vector<IndexEntry>> ReadIndex()
+	static std::unique_ptr<std::map<std::string, IndexEntry>> ReadIndex()
 	{
 		using namespace std;
 		using namespace boost;
 
-		auto entries = unique_ptr<vector<IndexEntry>>(new vector<IndexEntry>());
+		auto entries = unique_ptr<std::map<std::string, IndexEntry>>(new std::map<std::string, IndexEntry>());
 
 		if (filesystem::exists(IndexFile()))
 		{
@@ -374,7 +378,9 @@ public:
 				auto endOfPathIndex = possiblePathRange.find('\0');
 				endOfPathIndex = endOfPathIndex == std::string::npos ? 4 : endOfPathIndex;
 				entry->path = possiblePathRange.substr(0, endOfPathIndex);
-				entries->push_back(*entry);
+
+				auto insertPair = entry->GetEntryPair();
+				entries->insert(insertPair);
 
 				auto currentEntryLength = ((EntryLength + entry->path.size() + 8) / 8) * 8;
 				i += currentEntryLength;
