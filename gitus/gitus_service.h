@@ -264,22 +264,26 @@ public:
 		for (auto it = entries->begin(); it != entries->end(); it++)
 		{
 			auto* entry = &it->second;
-			fields[0] = entry->ctime;
-			fields[1] = entry->ctime_frac;
-			fields[2] = entry->mtime;
-			fields[3] = entry->mtime_frac;
-			fields[4] = entry->device;
-			fields[5] = entry->inode_number;
-			fields[6] = entry->permission_mode;
-			fields[7] = entry->uid;
-			fields[8] = entry->gid;
-			fields[9] = entry->file_size;
 
-			for (int i = 0; i < 10; i++)
-			{
-				auto headerProperty = fields[i];
-				entries_data += std::to_string(headerProperty);
-			}
+			entries_data += std::to_string(entry->ctime);
+
+			entries_data += std::to_string(entry->ctime_frac);
+
+			entries_data += std::to_string(entry->mtime);
+
+			entries_data += std::to_string(entry->mtime_frac);
+
+			entries_data += std::to_string(entry->device);
+
+			entries_data += std::to_string(entry->inode_number);
+
+			entries_data += std::to_string(entry->permission_mode);
+
+			entries_data += std::to_string(entry->uid);
+
+			entries_data += std::to_string(entry->gid);
+
+			entries_data += std::to_string(entry->file_size);
 
 			entries_data += entry->sha1;
 
@@ -290,9 +294,7 @@ public:
 			entries_data += entryPadding;
 		}
 
-		// A 12 - byte header consisting of a 4 - byte signature “DIRC”(0x44495243) 
-		// standing for DirCache; 4 - byte version number “2”(0x00000002), which is 
-		// the current version of Git index format; 32 - bit number of index entries
+		// A 12 byte header
 
 		string header;
 
@@ -321,8 +323,9 @@ public:
 		string data = header + entries_data;
 		auto digest = Sha1(*GetChars(data));
 		std::ofstream outfile(IndexFile().string(), std::ofstream::binary);
-		auto outputText = data + digest; //TODO null terminated ??
-		outfile << outputText;
+		auto output = data + digest;
+
+		outfile << output;
 	};
 
 
