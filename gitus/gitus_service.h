@@ -425,7 +425,8 @@ public:
 
 			treeEntries += currentEntry;
 		}
-		return treeEntries;
+		auto treeHash = GitusService::HashObject(treeEntries, GitusService::Tree);
+		return treeHash;
 	}
 };
 
