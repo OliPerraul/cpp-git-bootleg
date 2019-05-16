@@ -2,15 +2,6 @@
 #include <memory>
 #include <iostream>
 
-// Linux only
-//#include <stat.h>
-#include <sys/stat.h>
-#ifdef _WIN32
-
-#elif UNIX
-
-#endif
-
 #include <boost/filesystem.hpp>
 #include "gitus_service.h"
 #include "commands.h"
@@ -19,17 +10,10 @@
 
 //-- Init
 
-bool InitCommand::_FileExist(std::string filePath) {
-	bool exist = boost::filesystem::exists(filePath);
-	return exist;
-
-}
 
 bool InitCommand::_IsArleadyInitialize() {
-	boost::filesystem::path p = ".git/";
-	return boost::filesystem::is_directory(p);
+	return boost::filesystem::exists(GitusUtils::GitusDirectory());
 }
-
 
 bool InitCommand::Execute() {
 
@@ -37,89 +21,42 @@ bool InitCommand::Execute() {
 		return false;
 	}
 
-	boost::filesystem::create_directory(GitusService::GitusDirectory());
-	boost::filesystem::create_directory(GitusService::ObjectsDirectory());
-	boost::filesystem::create_directory(GitusService::RefsDirectory());
-	boost::filesystem::create_directory(GitusService::HeadsDirectory());
-	boost::filesystem::ofstream(GitusService::HeadFile().string());
-	boost::filesystem::ofstream(GitusService::MasterFile().string());
+	boost::filesystem::create_directory(GitusUtils::GitusDirectory());
+	boost::filesystem::create_directory(GitusUtils::ObjectsDirectory());
+	boost::filesystem::create_directory(GitusUtils::RefsDirectory());
+	boost::filesystem::create_directory(GitusUtils::HeadsDirectory());
+	boost::filesystem::ofstream(GitusUtils::HeadFile().string());
+	boost::filesystem::ofstream(GitusUtils::MasterFile().string());
 	return true;
 }
 
 
-
 //-- Add
-/*
-	"""Add all file paths to git index."""
-	paths = [p.replace('\\', '/') for p in paths]
-	all_entries = read_index()
-	entries = [e for e in all_entries if e.path not in paths]
-	for path in paths:
-		sha1 = hash_object(read_file(path), 'blob')
-		st = os.stat(path)
-		flags = len(path.encode())
-		assert flags < (1 << 12)
-		entry = IndexEntry(
-				int(st.st_ctime), 0, int(st.st_mtime), 0, st.st_dev,
-				st.st_ino, st.st_mode, st.st_uid, st.st_gid, st.st_size,
-				bytes.fromhex(sha1), flags, path)
-		entries.append(entry)
-	entries.sort(key=operator.attrgetter('path'))
-	write_index(entries)
-*/
-
-/*
-	for(auto entry = entries->begin(); entry!= entries->end; entry++)
-	{
-
-	}
-*/
 
 bool AddCommand::Execute() {
 
-	auto entries = GitusService::ReadIndex();
+	using namespace std;
 
-	
+	auto entries = GitusUtils::ReadIndex();
 
-// TODO enonce du devoir: Spécification technique: 'code portable'
-// TODO IndexEntry representation memoire dificile..
-//#ifdef _WIN32
-//	struct _stat buf;
-//	_stat(_pathspec.c_str(), &buf);
-//#elif UNIX
-//
-//#endif
-
-	// Add new entry
-	// TODO Fill up the other fields if IndexEntry?
 	IndexEntry entry;
 	entry.path = _pathspec;
-	entry.sha1 = GitusService::HashObject(GitusService::ReadFile(_pathspec), GitusService::Blob, true);
+	entry.sha1 = GitusUtils::HashObject(GitusUtils::ReadFile(_pathspec), GitusUtils::Blob, true);
 	if (entries->count(_pathspec) != 0) {
 		auto indexedEntry = entries->at(_pathspec);
 		if (indexedEntry.sha1 == entry.sha1) {
-			std::cout << "The specified file is arleady added" << std::endl;
+			cout << "The specified file is arleady added" << endl;
 			return false;
 		}
 		entries->erase(_pathspec);
 	}
 
-	auto entryPair = entry.GetEntryPair();
-	entries->insert(entryPair);
+	entries->insert(make_pair(entry.path, entry));
 
-	// Sort entries
-	//sort(entries->begin(), entries->end(),
-	//	[](const IndexEntry & a, const IndexEntry & b) -> bool
-	//{
-	//	return a.path > b.path;
-	//});
-
-	GitusService::WriteIndex(entries);
+	GitusUtils::WriteIndex(entries);
 
 	return true;
 }
-
-
 
 
 //--- Commit
@@ -127,20 +64,20 @@ bool AddCommand::Execute() {
 bool CommitCommand::Execute() {
 	std::string commitObject;
 
-	auto treeHash = GitusService::CreateCommitTree();
+	auto treeHash = GitusUtils::CreateCommitTree();
 	if (treeHash == "") {
 		std::cout << "Add file[s] to staging before committing..." << std::endl;
 		return false;
 	}
 	//If current tree exist => it's current master..
-	if (GitusService::CheckIfGitObjectExist(treeHash)) {
+	if (GitusUtils::CheckIfGitObjectExist(treeHash)) {
 		std::cout << "Add file[s] to staging before committing..." << std::endl;
 		return false;
 	}
 	commitObject += "tree"+ ' ' + treeHash + '\n';
 	// parent tree hash
-	if (GitusService::HasParentTree()) {
-		auto parentTreeHash = GitusService::ParentTreeHash();
+	if (GitusUtils::HasParentTree()) {
+		auto parentTreeHash = GitusUtils::ParentTreeHash();
 		commitObject += "parent" + ' '+ commitObject + '\n';
 	}
 	auto posxTime = std::time(0);
@@ -155,10 +92,10 @@ bool CommitCommand::Execute() {
 	commitObject += "\n";
 	commitObject += this->_msg + "\n";
 
-	auto headSha1 = GitusService::HashObject(commitObject, GitusService::Commit);
+	auto headSha1 = GitusUtils::HashObject(commitObject, GitusUtils::Commit);
 	headSha1 += "\n";
 
-	auto masterPath = GitusService::MasterFile();
+	auto masterPath = GitusUtils::MasterFile();
 	boost::filesystem::ofstream ofs{ masterPath };
 	ofs << headSha1;
 	std::cout << "committed to branch master with commit " + headSha1;
