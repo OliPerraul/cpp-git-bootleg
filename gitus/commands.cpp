@@ -128,14 +128,23 @@ bool CommitCommand::Execute() {
 	std::string commitObject;
 
 	auto treeHash = GitusService::CreateCommitTree();
-	commitObject += treeHash + '\n';
+	if (treeHash == "") {
+		std::cout << "Add file[s] to staging before committing..." << std::endl;
+		return false;
+	}
+	//If current tree exist => it's current master..
+	if (GitusService::CheckIfGitObjectExist(treeHash)) {
+		std::cout << "Add file[s] to staging before committing..." << std::endl;
+		return false;
+	}
+	commitObject += "tree"+ ' ' + treeHash + '\n';
 	// parent tree hash
 	if (GitusService::HasParentTree()) {
 		auto parentTreeHash = GitusService::ParentTreeHash();
-		commitObject += commitObject + '\n';
+		commitObject += "parent" + ' '+ commitObject + '\n';
 	}
 	auto posxTime = std::time(0);
-	// utc time
+
 	auto author = this->GenerateAuthorCommit(posxTime);
 	commitObject += author + "\n";
 
@@ -152,20 +161,8 @@ bool CommitCommand::Execute() {
 	auto masterPath = GitusService::MasterFile();
 	boost::filesystem::ofstream ofs{ masterPath };
 	ofs << headSha1;
+	std::cout << "committed to branch master with commit " + headSha1;
 
-	// author name email timestamp utc offset
-	/*
-	
-				auto filePath = ObjectsDirectory()
-				/ first;
-
-			if (!filesystem::exists(filePath)) {
-				filesystem::create_directories(filePath);
-				filesystem::ofstream ofs{ filePath / last };
-				ofs << content;
-			}
-	
-	*/
-	// commit msg
+	return true;
 }
 

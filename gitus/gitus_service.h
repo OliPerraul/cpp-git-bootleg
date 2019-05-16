@@ -193,8 +193,11 @@ public:
 			auto filePath = ObjectsDirectory()
 				/ first;
 
-			if (!filesystem::exists(filePath)) {
-				filesystem::create_directories(filePath);
+			if (!filesystem::exists(filePath / last)) {
+				if (!filesystem::exists(filePath)) {
+					filesystem::create_directories(filePath);
+				}
+
 				filesystem::ofstream ofs{ filePath / last };
 				ofs << content;
 			}
@@ -327,8 +330,7 @@ public:
 
 		outfile << output;
 	};
-
-
+	
 	static std::string ReadBytes(std::string filename)
 	{
 		std::ifstream ifs(filename);
@@ -434,16 +436,27 @@ public:
 
 	static bool HasParentTree() {
 		auto parentTreePath = MasterFile();
-		return boost::filesystem::exists(parentTreePath);
+		auto masterSize = boost::filesystem::file_size(parentTreePath);
+		auto hashParent = masterSize == 0;
+		return hashParent;
 	}
 
-	//TODO:TEST ME
 	static std::string ParentTreeHash() {
 		auto parenTreePath = MasterFile();
 		auto parentTreeData = ReadBytes(parenTreePath.string());
 		return parentTreeData;
 
 	}
+
+	static bool CheckIfGitObjectExist(std::string hash) {
+		std::string first = hash.substr(0, 2);
+		std::string last = hash.substr(2, std::string::npos);
+
+		auto filePath = ObjectsDirectory()
+			/ first;
+		return boost::filesystem::exists(filePath / last);
+	}
+
 };
 
 
