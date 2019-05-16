@@ -38,13 +38,20 @@ https://benhoyt.com/writings/pygit/
 ----
 
 //Zlib instruction
-https://stackoverflow.com/questions/23107703/compiling-boost-with-zlib-on-windows
 
-* dowload zlib from here
+* 1. dowload zlib from here
 http://zlib.net/
 
-* run b2 with the following command in powershell
-./b2 -j15 --toolset=msvc --build-type=complete stage -s ZLIB_SOURCE="C:\zlib-1.2.11" -s ZLIB_INCLUDE="C:\zlib-1.2.11"
+* 2. run b2 with the following command in powershell
+./b2 -j15 --toolset=msvc --build-type=complete stage --with-iostreams -s ZLIB_BINARY=zlib -s ZLIB_SOURCE="C:\zlib-1.2.11\" -s ZLIB_INCLUDE="C:\zlib-1.2.11\"
+https://stackoverflow.com/questions/23107703/compiling-boost-with-zlib-on-windows
+
+
+NOTE:
+*If didnt work try to build zlib before step 2.*
+
+* 1.1 Build zlib
+https://www.youtube.com/watch?time_continue=17&v=zco5runaFWU
 
 
 ----
