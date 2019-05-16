@@ -11,6 +11,7 @@
 std::unique_ptr<BaseCommand> ParseCommand(int argc, char **argv)
 {
 	namespace po = boost::program_options;
+	using namespace std;
 
 	// Cmd line params (e.g single dash --help vs -help
 	po::command_line_style::style_t style = po::command_line_style::style_t(
@@ -24,8 +25,8 @@ std::unique_ptr<BaseCommand> ParseCommand(int argc, char **argv)
 		// global help
 		("help,help", "Display this help message")
 		// positional arguments need to be added
-		("command", po::value<std::string>(), "command to execute")
-		("subargs", po::value<std::vector<std::string>>(), "Arguments for command");
+		("command", po::value<string>(), "command to execute")
+		("subargs", po::value<vector<string>>(), "Arguments for command");
 
 	po::positional_options_description pos;
 	pos.add("command", 1).
@@ -42,9 +43,9 @@ std::unique_ptr<BaseCommand> ParseCommand(int argc, char **argv)
 
 	po::store(parsed, vm);
 
-	std::string cmdName = vm["command"].as<std::string>();
+	string cmdName = vm["command"].as<string>();
 
-	std::unique_ptr<BaseCommand> cmd;
+	unique_ptr<BaseCommand> cmd;
 
 	// Subprograms
 
@@ -59,7 +60,7 @@ std::unique_ptr<BaseCommand> ParseCommand(int argc, char **argv)
 		desc.add_options()("help", "Show hidden files");
 
 		// Collects 'init args
-		std::vector<std::string> opts = po::collect_unrecognized(parsed.options, po::include_positional);
+		vector<string> opts = po::collect_unrecognized(parsed.options, po::include_positional);
 		opts.erase(opts.begin());
 
 		po::store(po::command_line_parser(opts)
@@ -68,8 +69,8 @@ std::unique_ptr<BaseCommand> ParseCommand(int argc, char **argv)
 			.run(), vm);
 		
 		cmd = vm.count("help") ?
-			std::unique_ptr<BaseCommand>(new InitCommandHelp) :
-			std::unique_ptr<BaseCommand>(new InitCommand);
+			unique_ptr<BaseCommand>(new InitCommandHelp) :
+			unique_ptr<BaseCommand>(new InitCommand);
 	}
 	else if (cmdName == "add")
 	{
@@ -79,7 +80,7 @@ std::unique_ptr<BaseCommand> ParseCommand(int argc, char **argv)
 			("pathspec", "path of the file");
 
 		// Collects 'init args
-		std::vector<std::string> opts = po::collect_unrecognized(parsed.options, po::include_positional);
+		std::vector<string> opts = po::collect_unrecognized(parsed.options, po::include_positional);
 		opts.erase(opts.begin());
 
 		po::positional_options_description pos;
@@ -92,8 +93,8 @@ std::unique_ptr<BaseCommand> ParseCommand(int argc, char **argv)
 			.run(), vm);
 
 		cmd = vm.count("help") ?
-			std::unique_ptr<BaseCommand>(new AddCommandHelp) :
-			std::unique_ptr<BaseCommand>(new AddCommand(vm["pathspec"].as<std::string>()));
+			unique_ptr<BaseCommand>(new AddCommandHelp) :
+			unique_ptr<BaseCommand>(new AddCommand(vm["pathspec"].as<std::string>()));
 	}
 	else if (cmdName == "commit")
 	{
@@ -110,7 +111,7 @@ std::unique_ptr<BaseCommand> ParseCommand(int argc, char **argv)
 			.add("email", 1);
 		
 		// Collects 'init args
-		std::vector<std::string> opts = po::collect_unrecognized(parsed.options, po::include_positional);
+		vector<string> opts = po::collect_unrecognized(parsed.options, po::include_positional);
 		opts.erase(opts.begin());
 
 		po::store(po::command_line_parser(opts)
@@ -120,11 +121,11 @@ std::unique_ptr<BaseCommand> ParseCommand(int argc, char **argv)
 			.run(), vm);
 
 		cmd = vm.count("help") ?
-			std::unique_ptr<BaseCommand>(new CommitCommandHelp) :
-			std::unique_ptr<BaseCommand>(new CommitCommand(
-				vm["msg"].as<std::string>(),
-				vm["author"].as<std::string>(),
-				vm["email"].as<std::string>()
+			unique_ptr<BaseCommand>(new CommitCommandHelp) :
+			unique_ptr<BaseCommand>(new CommitCommand(
+				vm["msg"].as<string>(),
+				vm["author"].as<string>(),
+				vm["email"].as<string>()
 				));
 	}
 

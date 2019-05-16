@@ -15,7 +15,6 @@ https://www.youtube.com/watch?v=_lKxJjV8r3Y
 * See program_option for an example of how I add a dependency
 
 
-TODO
 Il ne suffit que de s'inspirer de ce fichier
 https://github.com/benhoyt/pygit/blob/aa8d8bb62ae273ae2f4f167e36f24f40a11634b9/pygit.py
 
@@ -35,3 +34,30 @@ https://github.com/benhoyt/pygit/blob/master/pygit.py
 
 // Pygit guide
 https://benhoyt.com/writings/pygit/
+
+----
+
+//Zlib instruction
+https://stackoverflow.com/questions/23107703/compiling-boost-with-zlib-on-windows
+
+* dowload zlib from here
+http://zlib.net/
+
+* run b2 with the following command in powershell
+./b2 -j15 --toolset=msvc --build-type=complete stage -s ZLIB_SOURCE="C:\zlib-1.2.11" -s ZLIB_INCLUDE="C:\zlib-1.2.11"
+
+
+----
+
+**TODO**
+
+* Tests
+* Command line error handling
+* Further validation
+* Code cleanup
+* gitlab setup
+
+
+
+
+

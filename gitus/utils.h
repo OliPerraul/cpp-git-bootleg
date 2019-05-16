@@ -7,10 +7,12 @@
 #include <memory>
 #include <vector>
 
-
 #include <boost/uuid/uuid.hpp>
 #include <boost/uuid/detail/sha1.hpp>
 #include <boost/filesystem.hpp>
+#include <boost/iostreams/filter/zlib.hpp>
+#include <boost/iostreams/filtering_stream.hpp>
+#include <boost/iostreams/copy.hpp>
 
 #define DIR_CACHE_SIGNATURE "DIRC"
 
@@ -82,13 +84,6 @@ struct IndexEntry
 
 		flags.n = 0;
 	}
-
-	// TODO: check, removed this, it was messing with the state of the entry 
-	//std::pair<std::string, IndexEntry> GetEntryPair() 
-	//{
-	//	auto pair = std::pair<std::string, IndexEntry>(this->path, *this);
-	//	return pair;
-	//}
 };
 
 class GitusUtils {
@@ -159,26 +154,43 @@ public:
 		return std::string(buf);
 	};
 
-/*
-		"""Compute hash of object data of given type and write to object store
-			if "write" is True.Return SHA - 1 object hash as hex string.
-				"""
-				header = '{} {}'.format(obj_type, len(data)).encode()
-				full_data = header + b'\x00' + data
-				sha1 = hashlib.sha1(full_data).hexdigest()
-				if write:
-		path = os.path.join('.git', 'objects', sha1[:2], sha1[2:])
-			if not os.path.exists(path) :
-				os.makedirs(os.path.dirname(path), exist_ok = True)
-				write_file(path, zlib.compress(full_data))
-				return sha1
-*/
+	// TODO: cite source 
+	// https://stackoverflow.com/questions/27529570/simple-zlib-c-string-compression-and-decompression
+	static std::string Compress(const std::string& data)
+	{
+		using namespace boost::iostreams;
+
+		std::stringstream compressed;
+		std::stringstream decompressed;
+		decompressed << data;
+		filtering_streambuf<input> out;
+		out.push(zlib_compressor());
+		out.push(decompressed);
+		copy(out, compressed);
+		return compressed.str();
+	}
+
+	static std::string Decompress(const std::string& data)
+	{
+		using namespace boost::iostreams;
+
+		std::stringstream compressed;
+		std::stringstream decompressed;
+		compressed << data;
+		filtering_streambuf<input> in;
+		in.push(zlib_decompressor());
+		in.push(compressed);
+		copy(in, decompressed);
+		return decompressed.str();
+	}
+
 
 	// Simplified hashing
 	static std::string HashObject(std::string object, ObjectHashType type, bool write=true)
 	{
 		using namespace std;
 		using namespace boost;
+		namespace ios = iostreams;
 
 		std::string header;
 		switch (type)
@@ -212,7 +224,7 @@ public:
 				}
 
 				filesystem::ofstream ofs{ filePath / last };
-				ofs << content;
+				ofs << Compress(content);
 			}
 		}
 
@@ -225,6 +237,7 @@ public:
 		return std::string(paddingLength, '\0');
 	}
 
+	// Not required by the assignment
 	static std::string ReadObject(std::string object)
 	{
 
