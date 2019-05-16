@@ -2,6 +2,7 @@
 #define COMMANDS_H
 
 #include <iostream>
+#include <ctime>
 
 class BaseCommand {
 	bool debug_;
@@ -87,6 +88,19 @@ private:
 	std::string _msg;
 	std::string _author;
 	std::string _email;
+	
+	std::string GenerateAuthorCommit(std::time_t posxTime) {
+		return GenerateCommitMessage("author", posxTime);
+	}
+
+	std::string GenerateCommiterCommit(std::time_t posxTime) {
+		return GenerateCommitMessage("committer", posxTime);
+
+	}
+	std::string GenerateCommitMessage(std::string type, std::time_t posxTime) {
+		auto commitMessage = type + " " + _author + " " + "<" + _email + ">" + " " + std::to_string(posxTime);
+		return commitMessage;
+	}
 
 public:
 	virtual bool Execute() override;

@@ -431,6 +431,19 @@ public:
 		auto treeHash = GitusService::HashObject(treeEntries, GitusService::Tree);
 		return treeHash;
 	}
+
+	static bool HasParentTree() {
+		auto parentTreePath = MasterFile();
+		return boost::filesystem::exists(parentTreePath);
+	}
+
+	//TODO:TEST ME
+	static std::string ParentTreeHash() {
+		auto parenTreePath = MasterFile();
+		auto parentTreeData = ReadBytes(parenTreePath.string());
+		return parentTreeData;
+
+	}
 };
 
 

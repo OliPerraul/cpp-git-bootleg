@@ -12,10 +12,9 @@
 #endif
 
 #include <boost/filesystem.hpp>
-
 #include "gitus_service.h"
 #include "commands.h"
-
+#include <ctime>
 
 
 //-- Init
@@ -126,7 +125,47 @@ bool AddCommand::Execute() {
 //--- Commit
 
 bool CommitCommand::Execute() {
-	int i = 0;
-	return true;
+	std::string commitObject;
+
+	auto treeHash = GitusService::CreateCommitTree();
+	commitObject += treeHash + '\n';
+	// parent tree hash
+	if (GitusService::HasParentTree()) {
+		auto parentTreeHash = GitusService::ParentTreeHash();
+		commitObject += commitObject + '\n';
+	}
+	auto posxTime = std::time(0);
+	// utc time
+	auto author = this->GenerateAuthorCommit(posxTime);
+	commitObject += author + "\n";
+
+	auto committer = this->GenerateCommiterCommit(posxTime);
+	commitObject += committer + "\n";
+	
+	//double \n before msg, git spec
+	commitObject += "\n";
+	commitObject += this->_msg + "\n";
+
+	auto headSha1 = GitusService::HashObject(commitObject, GitusService::Commit);
+	headSha1 += "\n";
+
+	auto masterPath = GitusService::MasterFile();
+	boost::filesystem::ofstream ofs{ masterPath };
+	ofs << headSha1;
+
+	// author name email timestamp utc offset
+	/*
+	
+				auto filePath = ObjectsDirectory()
+				/ first;
+
+			if (!filesystem::exists(filePath)) {
+				filesystem::create_directories(filePath);
+				filesystem::ofstream ofs{ filePath / last };
+				ofs << content;
+			}
+	
+	*/
+	// commit msg
 }
 

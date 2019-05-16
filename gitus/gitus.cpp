@@ -133,6 +133,8 @@ std::unique_ptr<BaseCommand> ParseCommand(int argc, char **argv)
 
 int main(int argc, char **argv)
 {
-	std::unique_ptr<BaseCommand> cmd = ParseCommand(argc, argv);
-	cmd->Execute();
+	GitusService service;
+	GitusService::CreateCommitTree();
+//	std::unique_ptr<BaseCommand> cmd = ParseCommand(argc, argv);
+	//cmd->Execute();
 }
