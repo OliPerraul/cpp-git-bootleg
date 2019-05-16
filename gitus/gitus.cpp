@@ -5,7 +5,7 @@
 #include "boost/filesystem.hpp"
 
 #include "commands.h"
-#include "gitus_service.h" //TODO use if state is shared across cmds
+#include "utils.h" //TODO use if state is shared across cmds
 
 
 std::unique_ptr<BaseCommand> ParseCommand(int argc, char **argv)

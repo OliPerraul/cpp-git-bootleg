@@ -1,5 +1,5 @@
-﻿#ifndef COMMANDS_H
-#define COMMANDS_H
+﻿#ifndef GITUS_COMMANDS_H
+#define GITUS_COMMANDS_H
 
 #include <iostream>
 #include <ctime>

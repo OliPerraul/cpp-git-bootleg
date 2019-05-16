@@ -1,5 +1,5 @@
-#ifndef GITUS_SERVICE_H
-#define GITUS_SERVICE_H
+#ifndef GITUS_UTILS_H
+#define GITUS_UTILS_H
 
 #include <iostream>
 #include <sstream>

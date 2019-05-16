@@ -1,12 +1,12 @@
 
 #include <memory>
 #include <iostream>
-
-#include <boost/filesystem.hpp>
-#include "gitus_service.h"
-#include "commands.h"
 #include <ctime>
 
+#include <boost/filesystem.hpp>
+
+#include "utils.h"
+#include "commands.h"
 
 //-- Init
 
