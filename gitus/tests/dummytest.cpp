@@ -8,6 +8,7 @@
 void CleanUp();
 void DeleteFile(std::string fileName);
 void CreateFile(std::string fiileName, std::string content);
+boost::filesystem::path GetFileObjPath(std::string filePath);
 
 BOOST_AUTO_TEST_SUITE(Tests)
 
@@ -66,16 +67,14 @@ BOOST_AUTO_TEST_CASE(Add)
 	auto file = GitusUtils::ReadFile(fileName);
 	
 	AddCommand* add = new AddCommand(fileName);
-	auto fileHash = GitusUtils::HashObject(file, GitusUtils::Blob, false);
-	auto fileDirHead = fileHash.substr(0, 2);
-	auto fileDirBody = fileHash.substr(2);
-	auto objDir = GitusUtils::ObjectsDirectory();
-	auto filePath = objDir / fileDirHead / fileDirBody;
+	auto filePath = GetFileObjPath(fileName);
+
 	//Act
 	add->Execute();
 
 	//Assert
-	auto filePath =
+	auto fileObjectCreated = boost::filesystem::exists(filePath);
+	BOOST_CHECK(fileObjectCreated);
 }
 
 /*
@@ -117,4 +116,12 @@ void DeleteFile(std::string fileName) {
 void CreateFile(std::string fileName, std::string content) {
 	auto ofs = boost::filesystem::ofstream(fileName);
 	ofs << content + "\0";
+}
+
+boost::filesystem::path GetFileObjPath(std::string filePath) {
+	auto fileHash = GitusUtils::HashObject(filePath, GitusUtils::Blob, false);
+	auto fileDirHead = fileHash.substr(0, 2);
+	auto fileDirBody = fileHash.substr(2);
+	auto objDir = GitusUtils::ObjectsDirectory();
+	auto filePath = objDir / fileDirHead / fileDirBody;
 }
