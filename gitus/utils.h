@@ -40,9 +40,9 @@ struct IndexEntry
 {
 	size_t numFields = 10;
 
-	// the last time a file’s metadata changed
+	// the last time a fileï¿½s metadata changed
 	// nanosecond fractions
-	// the last time a file’s data changed
+	// the last time a fileï¿½s data changed
 	// nanosecond fractions
 	// The device (disk) upon which file resides
 	// The file inode number. 
@@ -300,10 +300,18 @@ public:
 
 		string data = header + entries_data;
 		auto digest = Sha1(data);
-		std::ofstream outfile(IndexFile().string(), std::ofstream::binary);
-		auto output = data + digest;
 
-		outfile << output;
+
+		filesystem::ofstream ofs{ IndexFile() };
+
+		auto output = data + digest;
+		ofs << output;
+		
+
+		//std::ofstream outfile(IndexFile().string(), std::ofstream::binary);
+		//auto output = data + digest;
+
+		//outfile << output;
 	
 	
 };
