@@ -57,39 +57,53 @@ BOOST_AUTO_TEST_CASE(InitArleadyInitted)
 
 }
 
-//
-//BOOST_AUTO_TEST_CASE(Add)
-//{
-//	//Arrange
-//	auto fileName = "testFile1.txt";
-//	CreateFile(fileName, "random text");
-//	AddCommand* add = new AddCommand(fileName);
-//	//Act
-//	add->Execute();
-//
-//	//Assert
-//}
 
+BOOST_AUTO_TEST_CASE(Add)
+{
+	//Arrange
+	auto fileName = "testFile1.txt";
+	CreateFile(fileName, "random text");
+	auto file = GitusUtils::ReadFile(fileName);
+	
+	AddCommand* add = new AddCommand(fileName);
+	auto fileHash = GitusUtils::HashObject(file, GitusUtils::Blob, false);
+	auto fileDirHead = fileHash.substr(0, 2);
+	auto fileDirBody = fileHash.substr(2);
+	auto objDir = GitusUtils::ObjectsDirectory();
+	auto filePath = objDir / fileDirHead / fileDirBody;
+	//Act
+	add->Execute();
 
-
-BOOST_AUTO_TEST_SUITE_END()
-
-
+	//Assert
+	auto filePath =
+}
 
 /*
 
-	boost::filesystem::create_directory(GitusUtils::GitusDirectory());
-	boost::filesystem::create_directory(GitusUtils::ObjectsDirectory());
-	boost::filesystem::create_directory(GitusUtils::RefsDirectory());
-	boost::filesystem::create_directory(GitusUtils::HeadsDirectory());
-	boost::filesystem::ofstream(GitusUtils::HeadFile().string());
-	boost::filesystem::ofstream(GitusUtils::MasterFile().string());
-	return true;
+init
+ -chacun de repo sont crer
+ -init dans un deja init
+
+add
+ -/ob/xx/xxxxxxxx bien crer
+ - index bien crer
+ - add dun file deja ddd
+ - add dun file existant pas
+
+commit
+ - creation new commit obj/xx/xx
+ - commit mais rien en staging
+ - second commit
+
+other
+--help
+- weird param inserted
 
 
-		BOOST_CHECK(x != 0.0f);
-	BOOST_CHECK_EQUAL((int)x, 9);
 */
+
+
+BOOST_AUTO_TEST_SUITE_END()
 
 void CleanUp() {
 	auto gitusPath = GitusUtils::GitusDirectory();
