@@ -307,13 +307,6 @@ public:
 		auto output = data + digest;
 		ofs << output;
 		
-
-		//std::ofstream outfile(IndexFile().string(), std::ofstream::binary);
-		//auto output = data + digest;
-
-		//outfile << output;
-	
-	
 };
 	
 	static std::string ReadBytes(std::string filename)
