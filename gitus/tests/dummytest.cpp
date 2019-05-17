@@ -57,24 +57,19 @@ BOOST_AUTO_TEST_CASE(InitArleadyInitted)
 
 }
 
+//
+//BOOST_AUTO_TEST_CASE(Add)
+//{
+//	//Arrange
+//	auto fileName = "testFile1.txt";
+//	CreateFile(fileName, "random text");
+//	AddCommand* add = new AddCommand(fileName);
+//	//Act
+//	add->Execute();
+//
+//	//Assert
+//}
 
-BOOST_AUTO_TEST_CASE(Add)
-{
-	//Arrange
-	auto fileName = "testFile1.txt"
-		CreateFile(fileName);
-	AddCommand* add = new AddCommand(fileName);
-	//Act
-	init->Execute();
-
-	//Assert
-	auto gitusDirExist = boost::filesystem::exists(gitusDir);
-	auto objDirExist = boost::filesystem::exists(objDir);
-	auto refDirExist = boost::filesystem::exists(refDir);
-	auto headDirExist = boost::filesystem::exists(headDir);
-	auto headFileSize = boost::filesystem::file_size(headFile);
-	auto masterFileSize = boost::filesystem::file_size(masterFile);
-}
 
 
 BOOST_AUTO_TEST_SUITE_END()
