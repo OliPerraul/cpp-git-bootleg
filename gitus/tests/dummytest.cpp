@@ -1,9 +1,12 @@
+
 #define BOOST_TEST_MODULE GitTests
 
 #include <boost/test/unit_test.hpp>
 #include <boost/filesystem.hpp>
+
+#include "../gitus_service.h"
+#include "../commands.h"
 #include "../utils.h"
-#include "../commands.cpp"
 
 void CleanUp();
 void DeleteFile(std::string fileName);
@@ -12,18 +15,20 @@ boost::filesystem::path GetFileObjPath(std::string filePath);
 
 BOOST_AUTO_TEST_SUITE(Tests)
 
+
 BOOST_AUTO_TEST_CASE(InitNormal)
 {
 	//Arrange
-	InitCommand* init = new InitCommand();
-	auto gitusDir = GitusUtils::GitusDirectory();
-	auto objDir = GitusUtils::ObjectsDirectory();
-	auto refDir = GitusUtils::RefsDirectory();
-	auto headDir = GitusUtils::HeadsDirectory();
-	auto headFile = GitusUtils::HeadFile();
-	auto masterFile = GitusUtils::MasterFile();
+	auto gitusDir = GitusService::NewGitusDirectory();
+	auto objDir = gitusDir / "objects/";
+	auto refDir = gitusDir / "refs/";
+	auto headDir = gitusDir / "refs/heads/";
+	auto masterFile = gitusDir / "refs/heads/master";
+	auto headFile = gitusDir / "HEAD";
 
 	//Act
+	auto gitus = std::shared_ptr<GitusService>(new GitusService);
+	InitCommand* init = new InitCommand(gitus);
 	init->Execute();
 	
 	//Assert
@@ -49,29 +54,16 @@ BOOST_AUTO_TEST_CASE(InitNormal)
 	CleanUp();
 }
 
-BOOST_AUTO_TEST_CASE(InitArleadyInitted)
-{
-	//Arrange
-	InitCommand* init = new InitCommand();
-	auto path = boost::filesystem::current_path();
-	//Act
-	init->Execute();
-	
-	//Assert
-	BOOST_CHECK(!init->Execute());
-	CleanUp();
-
-}
-
-
 BOOST_AUTO_TEST_CASE(Add)
 {
+	auto gitus = std::shared_ptr<GitusService>(new GitusService);
+
 	//Arrange
 	auto fileName = "testFile1.txt";
 	CreateFile(fileName, "random text");
-	auto file = GitusUtils::ReadFile(fileName);
+	auto file = Utils::ReadFile(fileName);
 	
-	AddCommand* add = new AddCommand(fileName);
+	AddCommand* add = new AddCommand(gitus, fileName);
 	auto filePath = GetFileObjPath(fileName);
 
 	//Act
@@ -91,7 +83,8 @@ init
  -chacun de repo sont crer
  -init dans un deja init
  {m_pathname=L"C:\\Users\\zeroeagle1\\CMakeBuilds\\9ea20e7e-e12c-ff34-9a63-2204612524e4\\build\\x64-Debug\\tests\\.git/objects/e2\\b64f6bf69d2916af31f293da31c10d6a575a0b" }
-add
+
+ add
  -/ob/xx/xxxxxxxx bien crer
  - index bien crer
  - add dun file deja ddd
@@ -113,7 +106,7 @@ other
 BOOST_AUTO_TEST_SUITE_END()
 
 void CleanUp() {
-	auto gitusPath = GitusUtils::GitusDirectory();
+	auto gitusPath = GitusService::NewGitusDirectory();
 	boost::filesystem::remove_all(gitusPath);
 }
 
@@ -127,11 +120,13 @@ void CreateFile(std::string fileName, std::string content) {
 }
 
 boost::filesystem::path GetFileObjPath(std::string fileName) {
-	auto fileContent = GitusUtils::ReadFile(fileName);
-	auto fileHash = GitusUtils::HashObject(fileContent, GitusUtils::Blob, false);
+	GitusService gitus;
+
+	auto fileContent = Utils::ReadFile(fileName);
+	auto fileHash = gitus.HashObject(fileContent, GitusService::Blob, false);
 	auto fileDirHead = fileHash.substr(0, 2);
 	auto fileDirBody = fileHash.substr(2, std::string::npos);
-	auto objDir = GitusUtils::ObjectsDirectory();
+	auto objDir = gitus.ObjectsDirectory();
 	auto filePath = objDir / fileDirHead / fileDirBody;
 	return filePath;
 }

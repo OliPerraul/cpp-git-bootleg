@@ -5,10 +5,11 @@
 #include "boost/filesystem.hpp"
 
 #include "commands.h"
-#include "utils.h" //TODO use if state is shared across cmds
+#include "gitus_service.h"
+#include "utils.h"
 
 
-std::unique_ptr<BaseCommand> ParseCommand(int argc, char **argv)
+std::unique_ptr<BaseCommand> CreateCommand(const std::shared_ptr<GitusService>& gitus, int argc, char **argv)
 {
 	namespace po = boost::program_options;
 	using namespace std;
@@ -48,7 +49,6 @@ std::unique_ptr<BaseCommand> ParseCommand(int argc, char **argv)
 	unique_ptr<BaseCommand> cmd;
 
 	// Subprograms
-
 	if (cmdName == "help")
 	{
 		//auto commit = new CommitCommand;
@@ -69,8 +69,8 @@ std::unique_ptr<BaseCommand> ParseCommand(int argc, char **argv)
 			.run(), vm);
 		
 		cmd = vm.count("help") ?
-			unique_ptr<BaseCommand>(new InitCommandHelp) :
-			unique_ptr<BaseCommand>(new InitCommand);
+			unique_ptr<BaseCommand>(new InitCommandHelp(gitus)) :
+			unique_ptr<BaseCommand>(new InitCommand(gitus));
 	}
 	else if (cmdName == "add")
 	{
@@ -93,8 +93,8 @@ std::unique_ptr<BaseCommand> ParseCommand(int argc, char **argv)
 			.run(), vm);
 
 		cmd = vm.count("help") ?
-			unique_ptr<BaseCommand>(new AddCommandHelp) :
-			unique_ptr<BaseCommand>(new AddCommand(vm["pathspec"].as<std::string>()));
+			unique_ptr<BaseCommand>(new AddCommandHelp(gitus)) :
+			unique_ptr<BaseCommand>(new AddCommand(gitus, vm["pathspec"].as<std::string>()));
 	}
 	else if (cmdName == "commit")
 	{
@@ -121,8 +121,9 @@ std::unique_ptr<BaseCommand> ParseCommand(int argc, char **argv)
 			.run(), vm);
 
 		cmd = vm.count("help") ?
-			unique_ptr<BaseCommand>(new CommitCommandHelp) :
+			unique_ptr<BaseCommand>(new CommitCommandHelp(gitus)) :
 			unique_ptr<BaseCommand>(new CommitCommand(
+				gitus,
 				vm["msg"].as<string>(),
 				vm["author"].as<string>(),
 				vm["email"].as<string>()
@@ -134,6 +135,10 @@ std::unique_ptr<BaseCommand> ParseCommand(int argc, char **argv)
 
 int main(int argc, char **argv)
 {
-	std::unique_ptr<BaseCommand> cmd = ParseCommand(argc, argv);
+	auto gitus = std::shared_ptr<GitusService>(new GitusService);
+	std::unique_ptr<BaseCommand> cmd = CreateCommand(gitus, argc, argv);
 	cmd->Execute();
+	
+	int x;
+	std::cin >> x;
 }

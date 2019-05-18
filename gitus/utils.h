@@ -2,30 +2,24 @@
 #define GITUS_UTILS_H
 
 #include <iostream>
-#include <sstream>
-#include <bitset>
 #include <memory>
 #include <vector>
+#include <sstream>
 
 #include <boost/uuid/uuid.hpp>
 #include <boost/uuid/detail/sha1.hpp>
 #include <boost/filesystem.hpp>
 
-
 #include <boost/iostreams/filter/zlib.hpp>
-#include <boost/iostreams/filtering_stream.hpp>
 #include <boost/iostreams/copy.hpp>
+#include <boost/iostreams/filtering_streambuf.hpp>
 
-static const char* DirCacheSignature = "DIRC";
-static const size_t IndexFormatVersion = 2;
-static const size_t HeaderLength = 12;
-static const size_t EntryLength = 59;
 
-// 16, and 32 bit null terminated char sequences
+// 16, and 32 bit
 union Word2 {
 public:
 	char    c[4];
-	size_t n;
+	unsigned int n;
 };
 
 union Word {
@@ -34,136 +28,72 @@ public:
 	unsigned short n;
 };
 
-//https://mincong-h.github.io/2018/04/28/git-index/
-struct IndexEntry
-{
-	size_t numFields = 10;
+// To correctly handle null chars and for semantic reasons, 'raw_data' is prefered over 'std::string'
+// https://arne-mertz.de/2018/11/string-not-for-raw-data/
+typedef std::vector<unsigned char> RawData;
+#define BZERO(data) std::fill((data).begin(), (data).end(), 0)
 
-	// the last time a file�s metadata changed
-	// nanosecond fractions
-	// the last time a file�s data changed
-	// nanosecond fractions
-	// The device (disk) upon which file resides
-	// The file inode number. 
-	// hexadecimal representation of file permission
-	// The user identifier of the current user
-	// The group identifier of the current user
-	// file size in number of bytes
-	std::vector<Word2> fields;
+#define SUBSTR(data, pos, len) RawData(data.begin()+pos, data.begin()+pos+len)
 
-	union Word flags;
 
-	std::string sha1;
-
-	std::string path;
-
-	union Word2 Permission()
-	{
-		return fields[6];
-	}
-
-	IndexEntry()
-	{
-		Word2 buffer; buffer.n = 0;
-		for (int i = 0; i < numFields; i++)
-		{
-			fields.push_back(buffer);
-		}
-
-		flags.n = 0;
-
-	};
-
-	IndexEntry(std::string header) {
-
-		Word2 buffer;
-		for (int i = 0; i < numFields; i++)
-		{
-			memcpy(buffer.c, header.data() + 32 * i, 32);
-			fields.push_back(buffer);
-		}
-
-		flags.n = 0;
-	}
-};
-
-class GitusUtils {
+class Utils {
 
 private:
 public:
 
-	enum  ObjectHashType
+	// Returns SHA1 as binrary
+	static std::shared_ptr<RawData> Sha1(RawData object)
 	{
-		Blob,
-		Commit,
-		Tree
+		using namespace std;
+
+		boost::uuids::detail::sha1 sha1;
+		sha1.process_bytes(object.data(), sizeof(char)*object.size());
+		unsigned int hash[5];
+		sha1.get_digest(hash);
+
+		auto data = shared_ptr<RawData>(new RawData);
+		
+		for (int i = 0; i < 5; i++)
+		{
+			Word2 val; val.n = hash[i];
+			copy(&val.c[0], &val.c[4], back_inserter(data));
+		}
+
+		return data;
 	};
 
-	static boost::filesystem::path IndexFile()
-	{
-		return boost::filesystem::current_path() / ".git/index";
-	}
 
-	static boost::filesystem::path HeadFile()
+	// Returns SHA1 as Hex string
+	static std::string Sha1String(RawData object)
 	{
-		return boost::filesystem::current_path() / ".git/HEAD";
-	}
+		using namespace std;
 
-	static boost::filesystem::path GitusDirectory()
-	{
-		return boost::filesystem::current_path() / ".git/";
-	}
-
-	static boost::filesystem::path RefsDirectory()
-	{
-		return boost::filesystem::current_path() / ".git/refs/";
-	}
-
-	static boost::filesystem::path HeadsDirectory()
-	{
-		return boost::filesystem::current_path() / ".git/refs/heads/";
-	}
-
-	static boost::filesystem::path MasterFile()
-	{
-		return boost::filesystem::current_path() / ".git/refs/heads/master";
-	}
-
-	static boost::filesystem::path ObjectsDirectory()
-	{
-		return boost::filesystem::current_path() / ".git/objects/";
-	}
-
-
-	static std::string Sha1(std::string object)
-	{
 		boost::uuids::detail::sha1 sha1;
 
 		// I use data() to disregard the null terminated char
 		sha1.process_bytes(object.data(), sizeof(char)*object.size());
-		unsigned hash[5] = { 0 };
+
+		unsigned int hash[5];
 		sha1.get_digest(hash);
 
-		// Back to string
-		char buf[41] = { 0 };
-
+		std::stringstream ss;
 		for (int i = 0; i < 5; i++)
-		{
-			std::sprintf(buf + (i << 3), "%08x", hash[i]);
+		{	
+			ss << std::hex << hash[i];
 		}
 
-		return std::string(buf);
+		return ss.str();
 	};
 
-	// TODO: cite source 
-	// https://stackoverflow.com/questions/27529570/simple-zlib-c-string-compression-and-decompression
-	static std::string Compress(const std::string& data)
+	// Compression code from
+// https://stackoverflow.com/questions/27529570/simple-zlib-c-string-compression-and-decompression
+	static std::string Compress(const RawData& data)
 	{
 		using namespace boost::iostreams;
 
 		std::stringstream compressed;
 		std::stringstream decompressed;
-		decompressed << data;
+		decompressed << data.data();
 		filtering_streambuf<input> out;
 		out.push(zlib_compressor());
 		out.push(decompressed);
@@ -171,13 +101,13 @@ public:
 		return compressed.str();
 	}
 
-	static std::string Decompress(const std::string& data)
+	static std::string Decompress(const RawData& data)
 	{
 		using namespace boost::iostreams;
 
 		std::stringstream compressed;
 		std::stringstream decompressed;
-		compressed << data;
+		compressed << data.data();
 		filtering_streambuf<input> in;
 		in.push(zlib_decompressor());
 		in.push(compressed);
@@ -185,127 +115,10 @@ public:
 		return decompressed.str();
 	}
 
-
-	// Simplified hashing
-	static std::string HashObject(std::string object, ObjectHashType type, bool write=true)
-	{
-		using namespace std;
-		using namespace boost;
-		namespace ios = iostreams;
-
-		std::string header;
-		switch (type)
-		{
-		case GitusUtils::Blob:
-			header = "blob";
-			break;
-		case GitusUtils::Commit:
-			header = "commit";
-			break;
-		case GitusUtils::Tree:
-			header = "tree";
-			break;
-		default:
-			break;
-		}
-
-		std::string content = header + object;
-		auto sha1 = Sha1(content);
-		if (write)
-		{
-			std::string first = sha1.substr(0, 2);
-			std::string last = sha1.substr(2, string::npos);
-
-			auto filePath = ObjectsDirectory()
-				/ first;
-
-			if (!filesystem::exists(filePath / last)) {
-				if (!filesystem::exists(filePath)) {
-					filesystem::create_directories(filePath);
-				}
-
-				filesystem::ofstream ofs{ filePath / last };
-				ofs << Compress(content);
-			}
-		}
-
-		return sha1;
-	}
-	static::std::string GenerateEntryPadding(std::string entryPath) {
-		auto pathSize = entryPath.size();
-		auto pathOffset = ((EntryLength + pathSize + 8) / 8) * 8;
-		auto paddingLength = pathOffset - EntryLength - pathSize;
-		return std::string(paddingLength, '\0');
-	}
-
-	// Not required by the assignment
-	static std::string ReadObject(std::string object)
-	{
-
-	}
-
-	// header = struct.pack('!4sLL', b'DIRC', 2, len(entries))
-	// TODO do not care about null terminated strings?
-	static void WriteIndex(const std::unique_ptr<std::map<std::string, IndexEntry>>& entries)
-	{
-		using namespace std;
-		using namespace boost;
-
-		stringstream entries_data;
-		
-		// The c++ standard guarantees that a map is iterated over in order of the keys
-		for (auto it = entries->begin(); it != entries->end(); it++)
-		{
-			auto* entry = &it->second;
-
-			for (int i = 0; i < entry->numFields; i++)
-			{
-				entries_data.write(entry->fields[i].c, 4*sizeof(char));
-			}
-
-			entries_data << entry->sha1;
-			entries_data.write(entry->flags.c, 2 * sizeof(char));
-
-			entries_data << entry->path;
-
-			auto entryPadding = GenerateEntryPadding(entry->path);
-
-			entries_data << entryPadding;
-		}
-
-		// A 12 byte header
-		stringstream header;
-
-		// Signature
-		header.write(DirCacheSignature, 4 * sizeof(char));
-		
-		// Format
-		Word version; version.n = IndexFormatVersion;
-		header.write(version.c, 2 * sizeof(char));
-
-		// Number of entries
-		Word2 numEntries; numEntries.n = entries->size();
-		header.write(numEntries.c, 4 * sizeof(char));
-	
-
-		stringstream data;
-		data << header.rdbuf();
-		data << entries_data.rdbuf();
-
-		auto digest = Sha1(data.str());
-
-		filesystem::ofstream ofs{ IndexFile() };
-
-		data << digest;
-
-		ofs << data.rdbuf();
-		
-	};
-	
-	static std::string ReadBytes(std::string filename)
+	static RawData ReadBytes(std::string filename)
 	{
 		std::ifstream ifs(filename);
-		std::string content((std::istreambuf_iterator<char>(ifs)),
+		RawData content((std::istreambuf_iterator<char>(ifs)),
 			(std::istreambuf_iterator<char>()));
 		return content;
 	}
@@ -316,96 +129,6 @@ public:
 		std::string content((std::istreambuf_iterator<char>(ifs)),
 			(std::istreambuf_iterator<char>()));
 		return content;
-	}
-
-	static std::unique_ptr<std::map<std::string, IndexEntry>> ReadIndex()
-	{
-		using namespace std;
-		using namespace boost;
-
-		auto entries = 
-			unique_ptr<map<string, IndexEntry>>(new map<string, IndexEntry>());
-
-		if (filesystem::exists(IndexFile()))
-		{
-			auto data = ReadBytes(IndexFile().string());
-			std::size_t fileLength = data.size();
-			string digest = data.substr(fileLength - 40);
-			string content = data.substr(0, fileLength  - 40);
-			string contentHash = Sha1(content);
-			if (contentHash != digest) {
-				throw std::exception("Index file got corrupted...");
-			}
-			
-			string indexEntries = content.substr(HeaderLength);
-			int i = 0;
-			while (i + EntryLength < indexEntries.size()) {
-				auto entryEnd = i + EntryLength;
-				auto entryContent = indexEntries.substr(i, entryEnd);
-				auto entryHeader = entryContent.substr(0, 10);
-				
-				IndexEntry entry(entryHeader);
-				entry.sha1 = entryContent.substr(10, 40);
-
-				auto flagString = entryContent.substr(50, 5);
-				memcpy(entry.flags.c, flagString.data(), flagString.size());
-
-				auto possiblePathRange = indexEntries.substr(55);
-				auto endOfPathIndex = possiblePathRange.find('\0');
-				endOfPathIndex = endOfPathIndex == std::string::npos ? 4 : endOfPathIndex;
-				entry.path = possiblePathRange.substr(0, endOfPathIndex);
-
-				entries->insert(make_pair(entry.path, entry));
-
-				auto currentEntryLength = ((EntryLength + entry.path.size() + 8) / 8) * 8;
-				i += currentEntryLength;
-			}
-		}
-
-		return entries;
-	};
-
-	static std::string CreateCommitTree() {
-		auto index = GitusUtils::ReadIndex();
-		std::string treeEntries;
-		for (auto it = index->begin(); it != index->end(); it++)
-		{
-			std::string currentEntry;
-			auto* entry = &it->second;
-			currentEntry += entry->Permission().c;
-			//TODO::FIND Real way...
-			currentEntry += "blob ";
-			currentEntry += entry->sha1 + ' ';
-			currentEntry += entry->path;
-			currentEntry += '\n';
-
-			treeEntries += currentEntry;
-		}
-		auto treeHash = GitusUtils::HashObject(treeEntries, GitusUtils::Tree);
-		return treeHash;
-	}
-
-	static bool HasParentTree() {
-		auto parentTreePath = MasterFile();
-		auto masterSize = boost::filesystem::file_size(parentTreePath);
-		auto hashParent = masterSize == 0;
-		return hashParent;
-	}
-
-	static std::string ParentTreeHash() {
-		auto parenTreePath = MasterFile();
-		auto parentTreeData = ReadBytes(parenTreePath.string());
-		return parentTreeData;
-
-	}
-
-	static bool CheckIfGitObjectExist(std::string hash) {
-		std::string first = hash.substr(0, 2);
-		std::string last = hash.substr(2, std::string::npos);
-
-		auto filePath = ObjectsDirectory()
-			/ first;
-		return boost::filesystem::exists(filePath / last);
 	}
 
 };

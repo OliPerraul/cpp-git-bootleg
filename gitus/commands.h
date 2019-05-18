@@ -3,12 +3,33 @@
 
 #include <iostream>
 #include <ctime>
+#include <memory>
+
+
+#include "gitus_service.h"
 
 class BaseCommand {
-	bool debug_;
+
+protected:
+	std::shared_ptr<GitusService> _gitus;
 
 public:
-	virtual bool Execute() = 0;
+
+	BaseCommand(const std::shared_ptr<GitusService>& gitus)
+	{
+		_gitus = gitus;
+	}
+
+	virtual bool Execute()
+	{
+		if (!_gitus->CacheCurrentGitusDirectory())
+		{
+			std::cout << "fatal: not a git repository (or any of the parent directories): .git" << std::endl;
+			return false;
+		}
+
+		return true;
+	}
 };
 
 //--- Help
@@ -17,6 +38,8 @@ class HelpCommand : public BaseCommand {
 public:
 	bool hidden_;
 	std::string path_;
+
+	HelpCommand(const std::shared_ptr<GitusService>& gitus) : BaseCommand(gitus) {}
 
 	virtual bool Execute() override
 	{
@@ -29,6 +52,8 @@ public:
 
 class InitCommandHelp : public BaseCommand {
 public:
+	InitCommandHelp(const std::shared_ptr<GitusService>& gitus) : BaseCommand(gitus) {}
+
 	virtual bool Execute() override
 	{
 		std::cout<< "usage: git init" << std::endl;
@@ -38,10 +63,12 @@ public:
 
 class InitCommand : public BaseCommand {
 private:
-	bool _IsArleadyInitialize();
-	bool _FileExist(std::string filePath);
-public:
+
+	bool Init();
 	
+public:
+	InitCommand(const std::shared_ptr<GitusService>& gitus) : BaseCommand(gitus) {}
+
 	virtual bool Execute() override;
 };
 
@@ -49,6 +76,8 @@ public:
 
 class AddCommandHelp : public BaseCommand {
 public:
+	AddCommandHelp(const std::shared_ptr<GitusService>& gitus) : BaseCommand(gitus) {}
+
 	virtual bool Execute() override
 	{
 		std::cout<< "usage: gitus add <pathspec>" << std::endl;
@@ -62,7 +91,7 @@ private:
 
 public:
 
-	AddCommand(std::string pathspec)
+	AddCommand(const std::shared_ptr<GitusService>& gitus, std::string pathspec) : BaseCommand(gitus)
 	{
 		_pathspec = pathspec;
 	};
@@ -73,8 +102,11 @@ public:
 
 
 //--- Commit
+
 class CommitCommandHelp : public BaseCommand {
 public:
+	CommitCommandHelp(const std::shared_ptr<GitusService>& gitus) : BaseCommand(gitus) {}
+
 	virtual bool Execute() override
 	{
 		std::cout<< "usage: gitus commit <msg> <author> <email>" << std::endl;
@@ -105,7 +137,7 @@ private:
 public:
 	virtual bool Execute() override;
 
-	CommitCommand(std::string msg, std::string author, std::string email)
+	CommitCommand(const std::shared_ptr<GitusService>& gitus, std::string msg, std::string author, std::string email) : BaseCommand(gitus)
 	{
 		_msg = msg;
 		_author = author;

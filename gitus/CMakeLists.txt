@@ -28,7 +28,8 @@ add_definitions(-DBOOST_ALL_NO_LIB)
 find_package(Boost REQUIRED COMPONENTS program_options filesystem zlib iostreams)
 message("boost lib: ${Boost_LIBRARIES}")
 
-add_executable(gitus commands.h utils.h commands.cpp gitus.cpp)
+add_executable(gitus commands.h commands.cpp utils.h gitus_service.h gitus_service.cpp gitus.cpp)
+
 
 target_include_directories(gitus 
     PRIVATE 

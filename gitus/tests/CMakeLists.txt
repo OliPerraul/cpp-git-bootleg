@@ -7,7 +7,7 @@ set(Boost_USE_STATIC_LIBS ON)
 
 find_package(Boost REQUIRED COMPONENTS unit_test_framework filesystem zlib iostreams)
 
-add_executable(gittests dummytest.cpp)
+add_executable(gittests dummytest.cpp ../utils.h ../commands.h ../commands.cpp ../gitus_service.h ../gitus_service.cpp)
 
 target_include_directories(gittests 
     PRIVATE 
