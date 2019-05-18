@@ -16,8 +16,7 @@
 #include <boost/iostreams/filtering_stream.hpp>
 #include <boost/iostreams/copy.hpp>
 
-#define DIR_CACHE_SIGNATURE "DIRC"
-
+static const char* DirCacheSignature = "DIRC";
 static const size_t IndexFormatVersion = 2;
 static const size_t HeaderLength = 12;
 static const size_t EntryLength = 59;
@@ -252,12 +251,8 @@ public:
 		using namespace std;
 		using namespace boost;
 
-		string entries_data;
-
-		// null terminated buffer to enable string concatenation
-		char* buffer4 = new char[5]; buffer4[4] = '\0';
-		char* buffer2 = new char[3]; buffer2[2] = '\0';
-
+		stringstream entries_data;
+		
 		// The c++ standard guarantees that a map is iterated over in order of the keys
 		for (auto it = entries->begin(); it != entries->end(); it++)
 		{
@@ -265,49 +260,47 @@ public:
 
 			for (int i = 0; i < entry->numFields; i++)
 			{
-				memcpy(buffer4, entry->fields[i].c, 4);
-				entries_data += buffer4;
+				entries_data.write(entry->fields[i].c, 4*sizeof(char));
 			}
 
-			entries_data += entry->sha1;
+			entries_data << entry->sha1;
+			entries_data.write(entry->flags.c, 2 * sizeof(char));
 
-			memcpy(buffer2, entry->flags.c, 2);
-			entries_data += buffer2;
+			entries_data << entry->path;
 
-			entries_data += entry->path;
 			auto entryPadding = GenerateEntryPadding(entry->path);
-			entries_data += entryPadding;
+
+			entries_data << entryPadding;
 		}
 
 		// A 12 byte header
-		string header;
+		stringstream header;
 
 		// Signature
-		header += DIR_CACHE_SIGNATURE;
+		header.write(DirCacheSignature, 4 * sizeof(char));
 		
 		// Format
 		Word version; version.n = IndexFormatVersion;
-		memcpy(buffer4, version.c, 4);
-		header += buffer4;
+		header.write(version.c, 2 * sizeof(char));
 
 		// Number of entries
-		Word numEntries; numEntries.n = entries->size();
-		memcpy(buffer4, version.c, 4);
-		header += buffer4;
+		Word2 numEntries; numEntries.n = entries->size();
+		header.write(numEntries.c, 4 * sizeof(char));
 	
-		delete[] buffer4;
-		delete[] buffer2;
 
-		string data = header + entries_data;
-		auto digest = Sha1(data);
+		stringstream data;
+		data << header.rdbuf();
+		data << entries_data.rdbuf();
 
+		auto digest = Sha1(data.str());
 
 		filesystem::ofstream ofs{ IndexFile() };
 
-		auto output = data + digest;
-		ofs << output;
+		data << digest;
+
+		ofs << data.rdbuf();
 		
-};
+	};
 	
 	static std::string ReadBytes(std::string filename)
 	{
