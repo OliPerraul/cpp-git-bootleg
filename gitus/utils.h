@@ -123,13 +123,13 @@ public:
 		return content;
 	}
 
-	static std::string ReadFile(std::string filename)
-	{
-		std::ifstream ifs(filename);
-		std::string content((std::istreambuf_iterator<char>(ifs)),
-			(std::istreambuf_iterator<char>()));
-		return content;
-	}
+	//static std::string ReadFile(std::string filename)
+	//{
+	//	std::ifstream ifs(filename);
+	//	std::string content((std::istreambuf_iterator<char>(ifs)),
+	//		(std::istreambuf_iterator<char>()));
+	//	return content;
+	//}
 
 };
 

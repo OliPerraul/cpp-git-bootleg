@@ -24,7 +24,7 @@ static const size_t EntryLength = 59;
 static const size_t EntryHeaderLength = 10;
 static const size_t Sha1Size = 20;
 
-std::string GitusService::HashObject(RawData object, ObjectHashType type, bool write)
+bool GitusService::HashObject(const RawData& object, ObjectHashType type, bool write, RawData& sha1)
 {
 	using namespace std;
 	using namespace boost;
@@ -59,11 +59,13 @@ std::string GitusService::HashObject(RawData object, ObjectHashType type, bool w
 	std::copy(header.begin(), header.end(), std::back_inserter(content));
 	std::copy(object.begin(), object.end(), std::back_inserter(content));
 
-	auto sha1 = Utils::Sha1String(content);
+	// sha1 string hex used for object path
+	// 20 bytes returned as 40 hex characters
+	auto sha1String = Utils::Sha1String(content);
 	if (write)
 	{
-		std::string first = sha1.substr(0, 2);
-		std::string last = sha1.substr(2, string::npos);
+		std::string first = sha1String.substr(0, 2);
+		std::string last = sha1String.substr(2, string::npos);
 
 		auto filePath = ObjectsDirectory()
 			/ first;
@@ -78,7 +80,9 @@ std::string GitusService::HashObject(RawData object, ObjectHashType type, bool w
 		}
 	}
 
-	return sha1;
+	// Return full sha binary
+	auto sha1 = Utils::Sha1(content);
+	return true;
 }
 
 //// Not required by the assignment
@@ -87,12 +91,12 @@ std::string GitusService::HashObject(RawData object, ObjectHashType type, bool w
 //
 //}
 
-void GitusService::WriteIndex(const std::unique_ptr<std::map<std::string, IndexEntry>>& entries)
+bool GitusService::WriteIndex(const std::unique_ptr<std::map<std::string, IndexEntry>>& entries)
 {
 	using namespace std;
 	using namespace boost;
 
-	RawData entries_data;
+	RawData entriesData;
 
 	// The c++ standard guarantees that a map is iterated over in order of the keys
 	for (auto it = entries->begin(); it != entries->end(); it++)
@@ -102,25 +106,25 @@ void GitusService::WriteIndex(const std::unique_ptr<std::map<std::string, IndexE
 		for (int i = 0; i < entry->numFields; i++)
 		{
 			for(int j = 0; j < 4; j++)
-			entries_data.push_back(entry->fields[i].c[j]);
+			entriesData.push_back(entry->fields[i].c[j]);
 		}
 
 		for (int j = 0; j < Sha1Size; j++)
-		entries_data.push_back(entry->sha1[j]);
+		entriesData.push_back(entry->sha1[j]);
 
 		// add flags
 		for (int j = 0; j < 2; j++)
-			entries_data.push_back(entry->flags.c[j]);
+			entriesData.push_back(entry->flags.c[j]);
 
 		// Add path
 		for (int j = 0; j < entry->path.size(); j++)
-			entries_data.push_back(entry->path[j]);
+			entriesData.push_back(entry->path[j]);
 
 		// Add padding
 		auto pathOffset = ((EntryLength + entry->path.size() + 8) / 8) * 8;
 		auto paddingLength = pathOffset - EntryLength - entry->path.size();
 		for (int j = 0; j < entry->path.size(); j++)
-			entries_data.push_back(0);
+			entriesData.push_back(0);
 
 	}
 
@@ -144,39 +148,38 @@ void GitusService::WriteIndex(const std::unique_ptr<std::map<std::string, IndexE
 	stringstream data;
 
 	// Concat entries
-	data.insert(data.end(), entries_data.begin(), entries_data.end());
+	data.insert(data.end(), entriesData.begin(), entriesData.end());
 
 	auto digest = Utils::Sha1(data);
 
 	filesystem::ofstream ofs{ IndexFile() };
 
 	// Concat digest
-	data.insert(data.end(), entries_data.begin(), entries_data.end());
+	data.insert(data.end(), entriesData.begin(), entriesData.end());
 
 	ofs << data.data();
 
 };
 
-std::unique_ptr<std::map<std::string, IndexEntry>> GitusService::ReadIndex()
+bool GitusService::ReadIndex(std::map<std::string, IndexEntry>& entries)
 {
 	using namespace std;
 	using namespace boost;
 
-	auto entries =
-		unique_ptr<map<string, IndexEntry>>(new map<string, IndexEntry>());
 
 	if (filesystem::exists(IndexFile()))
 	{
 		auto data = Utils::ReadBytes(IndexFile().string());
-		RawData digest(data.end() - 20, data.end());
-		RawData content(data.begin(), data.end() - 20);
+		RawData digest(data.end() - Sha1Size, data.end());
+		RawData content(data.begin(), data.end() - Sha1Size);
 
-		auto content_hash = Utils::Sha1(content);
-		if (*content_hash != digest) {
-			throw std::exception("Index file got corrupted...");
+		auto contentHash = Utils::Sha1(content);
+		if (*contentHash != digest) {
+			std::exception("fatal: Index file is corrupted.");
+			return false;
 		}
 
-		RawData indexEntries(content.begin(), data.end() - HeaderLength);
+		RawData indexEntries(content.begin()+HeaderLength, data.end());
 
 		int i = 0;
 		while (i + EntryLength < indexEntries.size())
@@ -185,45 +188,77 @@ std::unique_ptr<std::map<std::string, IndexEntry>> GitusService::ReadIndex()
 			RawData entryHeader(entryContent.begin(), entryContent.begin() + EntryHeaderLength);
 
 			IndexEntry entry(entryHeader);
-			entry.sha1 = RawData(entryContent.begin()+EntryHeaderLength, entryContent.begin()+Sha1Size);
+			entry.sha1 = RawData(
+				entryContent.begin() + EntryHeaderLength, 
+				entryContent.begin() + EntryHeaderLength + Sha1Size);
 
-			auto flagString = RawData(entryContent.begin()+50, entryContent.begin()+50+5);
-			memcpy(entry.flags.c, flagString.data(), flagString.size());
+			RawData flags(
+				entryContent.begin() + 50, 
+				entryContent.begin() + 50 + 5);
+			memcpy(entry.flags.c, flags.data(), flags.size());
 
-			auto possiblePathRange = indexEntries.substr(55);
-			auto endOfPathIndex = possiblePathRange.find('\0');
-			endOfPathIndex = endOfPathIndex == std::string::npos ? 4 : endOfPathIndex;
-			entry.path = possiblePathRange.substr(0, endOfPathIndex);
+			RawData possiblePathRange(
+				indexEntries.begin() + 55,
+				indexEntries.end());
 
-			entries->insert(make_pair(entry.path, entry));
+			auto pos = std::find(indexEntries.begin() + 55, indexEntries.end(), '\0');
+			auto path = RawData(indexEntries.begin() + 55, pos);
+			copy(path.begin(), path.end(), back_inserter<string>(entry.path));
+
+			entries.insert(make_pair(entry.path, entry));
 
 			auto currentEntryLength = ((EntryLength + entry.path.size() + 8) / 8) * 8;
 			i += currentEntryLength;
 		}
 	}
 
-	return entries;
+	return true;
 };
 
 
-std::string GitusService::CreateCommitTree() {
-	auto index = GitusService::ReadIndex();
-	std::string treeEntries;
-	for (auto it = index->begin(); it != index->end(); it++)
-	{
-		std::string currentEntry;
-		auto* entry = &it->second;
-		currentEntry += entry->Permission().c;
-		//TODO::FIND Real way...
-		currentEntry += "blob ";
-		currentEntry += entry->sha1 + ' ';
-		currentEntry += entry->path;
-		currentEntry += '\n';
+bool GitusService::HashCommitTree(RawData& treeHash) {
 
-		treeEntries += currentEntry;
+	using namespace std;
+	using namespace boost;
+
+	auto entries = map<string, IndexEntry>();
+
+	if (GitusService::ReadIndex(entries))
+	{
+		// Error occured
+		return false;
 	}
-	auto treeHash = GitusService::HashObject(treeEntries, GitusService::Tree);
-	return treeHash;
+	else if (entries.empty())
+	{
+		std::cout << "Add file[s] to staging before committing..." << std::endl;
+		return false;
+	}
+
+	RawData treeEntries;
+	// each 'line' in a tree object is in the '<mode><space><path>' format
+	// then a NUL byte, then the binary SHA-1 hash.
+	for (auto it = entries.begin(); it != entries.end(); it++)
+	{
+		auto* entry = &it->second;
+		
+		// mode
+		copy(&entry->fields[6].c[0], &entry->fields[6].c[4], back_inserter(treeEntries));
+		
+		// empty space
+		treeEntries.push_back(' ');
+		
+		// path
+		copy(entry->path.begin(), entry->path.end(), back_inserter(treeEntries));
+		
+		// null byte
+		treeEntries.push_back(0);
+
+		// sha1
+		copy(entry->sha1.begin(), entry->sha1.end(), back_inserter(treeEntries));	
+	}
+
+	GitusService::HashObject(treeEntries, GitusService::Tree, true, treeHash);
+	return true;
 }
 
 bool GitusService::HasParentTree() {
@@ -233,7 +268,7 @@ bool GitusService::HasParentTree() {
 	return hashParent;
 }
 
-std::string GitusService::ParentTreeHash() {
+bool GitusService::ParentTreeHash(std::string hash) {
 	auto parenTreePath = MasterFile();
 	auto parentTreeData = Utils::ReadBytes(parenTreePath.string());
 	return parentTreeData;

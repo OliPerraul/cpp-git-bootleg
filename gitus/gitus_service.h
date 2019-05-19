@@ -150,22 +150,20 @@ public:
 		return _currentGitusDirectory / "objects/";
 	} 
 
-	std::string HashObject(RawData, ObjectHashType type, bool write = true);
+	bool HashObject(const RawData& object, ObjectHashType type, bool write, RawData& sha1);
 
-	// Not required by the assignment
-	//std::string ReadObject(std::string object);
 
-	void WriteIndex(const std::unique_ptr<std::map<std::string, IndexEntry>>& entries);
+	bool WriteIndex(const std::unique_ptr<std::map<std::string, IndexEntry>>& entries);
 
-	std::unique_ptr<std::map<std::string, IndexEntry>> ReadIndex();
+	bool ReadIndex(std::map<std::string, IndexEntry>& entries);
 
-	std::string CreateCommitTree();
+	bool HashCommitTree(RawData& hash);
 
 	bool HasParentTree();
 
-	std::string ParentTreeHash();
+	bool ParentTreeHash(RawData& hash);
 
-	bool CheckIfGitObjectExist(std::string hash);
+	bool CheckIfGitObjectExist(RawData& hash);
 
 };
 

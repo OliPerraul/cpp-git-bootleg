@@ -62,25 +62,30 @@ bool AddCommand::Execute() {
 		return false;
 	}
 
-	auto entries = _gitus->ReadIndex();
+	auto entries = map<string, IndexEntry>();
+	if (!_gitus->ReadIndex(entries))
+	{
+		// Error while reading, return.
+		return false;
+	}
 
 	IndexEntry entry;
 	
 	entry.path = _pathspec;
 	
-	entry.sha1 = _gitus->HashObject(Utils::ReadFile(fullPath.string()), GitusService::Blob, true);
+	_gitus->HashObject(Utils::ReadBytes(fullPath.string()), GitusService::Blob, true, entry.sha1);
 	
-	if (entries->count(_pathspec) != 0) {
-		auto indexedEntry = entries->at(_pathspec);
+	if (entries.count(_pathspec) != 0) {
+		auto indexedEntry = entries.at(_pathspec);
 		if (indexedEntry.sha1 == entry.sha1) {
 			cout << "The specified file is arleady added" << endl;
 			return false;
 		}
 
-		entries->erase(_pathspec);
+		entries.erase(_pathspec);
 	}
 
-	entries->insert(make_pair(entry.path, entry));
+	entries.insert(make_pair(entry.path, entry));
 
 	_gitus->WriteIndex(entries);
 
@@ -95,13 +100,14 @@ bool CommitCommand::Execute() {
 	if (!BaseCommand::Execute())
 		return false;
 
-	std::string commitObject;
-
-	auto treeHash = _gitus->CreateCommitTree();
+	RawData commitObject;
+	if(_gitus->HashCommitTree(commitObject))
 	if (treeHash == "") {
 		std::cout << "Add file[s] to staging before committing..." << std::endl;
 		return false;
 	}
+
+
 	//If current tree exist => it's current master..
 	if (_gitus->CheckIfGitObjectExist(treeHash)) {
 		std::cout << "Add file[s] to staging before committing..." << std::endl;
