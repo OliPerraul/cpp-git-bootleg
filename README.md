@@ -58,10 +58,8 @@ https://www.youtube.com/watch?time_continue=17&v=zco5runaFWU
 
 **TODO**
 
-* Tests
-* Command line error handling
-* Further validation
-* Code cleanup
+* Commit 'nothing to commit working tree clean'
+* Commit Test
 * gitlab setup
 
 
