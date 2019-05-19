@@ -118,7 +118,7 @@ public:
 
 	static RawData ReadBytes(std::string filename)
 	{
-		std::ifstream ifs(filename);
+		std::ifstream ifs(filename, std::ios::binary);
 		RawData content(
 			(std::istreambuf_iterator<char>(ifs)),
 			(std::istreambuf_iterator<char>()));
