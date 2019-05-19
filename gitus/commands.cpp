@@ -15,6 +15,8 @@
 bool InitCommand::Init()
 {
 	boost::filesystem::create_directory(GitusService::NewGitusDirectory());
+	_gitus->CacheCurrentGitusDirectory();
+
 	boost::filesystem::create_directory(_gitus->ObjectsDirectory());
 	boost::filesystem::create_directory(_gitus->RefsDirectory());
 	boost::filesystem::create_directory(_gitus->HeadsDirectory());
@@ -78,25 +80,25 @@ bool AddCommand::Execute() {
 	}
 
 	IndexEntry entry;
-	
-	entry.path = _pathspec;
-	
+
 	_gitus->HashObject(Utils::ReadBytes(fullPath.string()), GitusService::Blob, true, entry.sha1);
-	
+
+	entry.path = _pathspec;
+
 	if (entries.count(_pathspec) != 0) {
+
 		auto indexedEntry = entries.at(_pathspec);
 		if (indexedEntry.sha1 == entry.sha1) {
-			cout << "The specified file is arleady added" << endl;
+			cout << "The file '" << _pathspec << "' is arleady inside the index." << endl;
 			return false;
 		}
-
-		entries.erase(_pathspec);
 	}
 
 	entries.insert(make_pair(entry.path, entry));
 
 	_gitus->WriteIndex(entries);
 
+	cout << "File '" << _pathspec << "' added to the index.";
 	return true;
 }
 
@@ -112,7 +114,7 @@ bool CommitCommand::Execute() {
 		return false;
 
 	RawData directoryTreeObject;
-	if(_gitus->HashCommitTree(directoryTreeObject))
+	if(!_gitus->HashCommitTree(directoryTreeObject))
 	{
 		// Error occured, return
 		return false;
@@ -127,14 +129,19 @@ bool CommitCommand::Execute() {
 		directoryTreeObject.size() * sizeof(unsigned char));
 
 	// Add parent commit object information
+	// If has local master and local master is not empty
 	if (_gitus->HasParentTree()) {
 		RawData localMaster;
 		_gitus->LocalMasterHash(localMaster);
-		content << '\n';
-		content << "parent ";
-		content.write(
-			reinterpret_cast<char*>(localMaster.data()),
-			directoryTreeObject.size() * sizeof(unsigned char));
+
+		if (localMaster.size() > 0)
+		{
+			content << '\n';
+			content << "parent ";
+			content.write(
+				reinterpret_cast<char*>(localMaster.data()),
+				directoryTreeObject.size() * sizeof(unsigned char));
+		}
 	}
 
 	// Add author information

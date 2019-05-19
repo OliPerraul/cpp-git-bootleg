@@ -43,7 +43,8 @@ public:
 
 	virtual bool Execute() override
 	{
-		return false;
+		std::cout << "usage: gitus <command> [<args>]" << std::endl;
+		return true;
 	};
 
 };

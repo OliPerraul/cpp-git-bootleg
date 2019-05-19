@@ -78,6 +78,19 @@ BOOST_AUTO_TEST_CASE(Add)
 }
 
 /*
+TODO
+I checked that 
+
+git add oli.txt
+>> added file oli.txt to index.
+
+git add oli.txt
+>> file oli.txt already in the index.
+
+*/
+
+
+/*
 
 init
  -chacun de repo sont crer

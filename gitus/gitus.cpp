@@ -9,7 +9,7 @@
 #include "utils.h"
 
 
-std::unique_ptr<BaseCommand> CreateCommand(const std::shared_ptr<GitusService>& gitus, int argc, char **argv)
+std::shared_ptr<BaseCommand> CreateCommand(const std::shared_ptr<GitusService>& gitus, int argc, char **argv)
 {
 	namespace po = boost::program_options;
 	using namespace std;
@@ -22,6 +22,7 @@ std::unique_ptr<BaseCommand> CreateCommand(const std::shared_ptr<GitusService>& 
 		po::command_line_style::allow_dash_for_short);
 
 	po::options_description global("Global options");
+
 	global.add_options()
 		// global help
 		("help,help", "Display this help message")
@@ -46,42 +47,71 @@ std::unique_ptr<BaseCommand> CreateCommand(const std::shared_ptr<GitusService>& 
 
 	string cmdName = vm["command"].as<string>();
 
-	unique_ptr<BaseCommand> cmd;
-
+	std::shared_ptr<BaseCommand> cmd;
 	// Subprograms
 	if (cmdName == "help")
 	{
-		//auto commit = new CommitCommand;
-		//cmd = std::unique_ptr<BaseCommand>(commit);
+		return shared_ptr<BaseCommand>(new HelpCommand(gitus));
 	}
 	else if (cmdName == "init")
 	{
 		po::options_description desc("init options");
-		desc.add_options()("help", "Show hidden files");
+		desc.add_options()("help", "");
 
 		// Collects 'init args
 		vector<string> opts = po::collect_unrecognized(parsed.options, po::include_positional);
 		opts.erase(opts.begin());
 
+		// Create help command
+		cmd = shared_ptr<BaseCommand>(new InitCommandHelp(gitus));
+
+		// Check if too many arguments
+		if (opts.size() > 1)
+		{
+			cout << "Wrong number of positional arguments." << endl;
+			return cmd;
+		}
+
 		po::store(po::command_line_parser(opts)
 			.options(desc)
 			.style(style)
 			.run(), vm);
-		
-		cmd = vm.count("help") ?
-			unique_ptr<BaseCommand>(new InitCommandHelp(gitus)) :
-			unique_ptr<BaseCommand>(new InitCommand(gitus));
+
+		// Check if help argument
+		if (vm.count("help"))
+		{
+			return cmd;
+		}
+		else if (opts.size() != 0)
+		{
+			cout << "Wrong number of positional arguments." << endl;
+			return cmd;
+		}
+		else
+		{
+			return shared_ptr<BaseCommand>(new InitCommand(gitus));
+		}
 	}
 	else if (cmdName == "add")
 	{
 		po::options_description desc("init options");
 		desc.add_options()
-			("help", "Show hidden files")
-			("pathspec", "path of the file");
+			("help", "")
+			("pathspec", "");
 
 		// Collects 'init args
 		std::vector<string> opts = po::collect_unrecognized(parsed.options, po::include_positional);
 		opts.erase(opts.begin());
+		
+		// Create help command
+		cmd = shared_ptr<BaseCommand>(new AddCommandHelp(gitus));
+
+		// Check if too many arguments
+		if (opts.size() > 1)
+		{
+			cout << "Wrong number of positional arguments." << endl;
+			return cmd;
+		}
 
 		po::positional_options_description pos;
 		pos.add("pathspec", 1);
@@ -92,18 +122,28 @@ std::unique_ptr<BaseCommand> CreateCommand(const std::shared_ptr<GitusService>& 
 			.positional(pos)
 			.run(), vm);
 
-		cmd = vm.count("help") ?
-			unique_ptr<BaseCommand>(new AddCommandHelp(gitus)) :
-			unique_ptr<BaseCommand>(new AddCommand(gitus, vm["pathspec"].as<std::string>()));
+		if (vm.count("help"))
+		{
+			return cmd;
+		}
+		else if (opts.size() != 1)
+		{
+			cout << "Wrong number of positional arguments." << endl;
+			return cmd; // return the help command
+		}
+		else
+		{
+			return shared_ptr<BaseCommand>(new AddCommand(gitus, vm["pathspec"].as<std::string>()));
+		}
 	}
 	else if (cmdName == "commit")
 	{
 		po::options_description desc("init options");
 		desc.add_options()
-			("help", "Show hidden files")
-			("msg", "path of the file")
-			("author", "path of the file")
-			("email", "path of the file");
+			("help", "")
+			("msg", "")
+			("author", "")
+			("email", "");
 
 		po::positional_options_description pos;
 		pos.add("msg", 1)
@@ -114,31 +154,58 @@ std::unique_ptr<BaseCommand> CreateCommand(const std::shared_ptr<GitusService>& 
 		vector<string> opts = po::collect_unrecognized(parsed.options, po::include_positional);
 		opts.erase(opts.begin());
 
+		// Create help command
+		cmd = shared_ptr<BaseCommand>(new CommitCommandHelp(gitus));
+
+		// Check if too many arguments
+		if (opts.size() > 3)
+		{
+			cout << "Wrong number of positional arguments." << endl;
+			return cmd;
+		}
+
 		po::store(po::command_line_parser(opts)
 			.options(desc)
 			.positional(pos)
 			.style(style)
 			.run(), vm);
 
-		cmd = vm.count("help") ?
-			unique_ptr<BaseCommand>(new CommitCommandHelp(gitus)) :
-			unique_ptr<BaseCommand>(new CommitCommand(
+		if (vm.count("help"))
+		{
+			return cmd;
+		}
+		else if (opts.size() != 3)
+		{
+			cout << "Wrong number of positional arguments." << endl;
+			return cmd;
+		}
+		else
+		{
+			return shared_ptr<BaseCommand>(new CommitCommand(
 				gitus,
 				vm["msg"].as<string>(),
 				vm["author"].as<string>(),
 				vm["email"].as<string>()
-				));
+			));
+		}
 	}
 
-	return cmd;
+	return false;
 }
 
 int main(int argc, char **argv)
 {
 	auto gitus = std::shared_ptr<GitusService>(new GitusService);
-	std::unique_ptr<BaseCommand> cmd = CreateCommand(gitus, argc, argv);
-	cmd->Execute();
+	auto cmd = CreateCommand(gitus, argc, argv);
 	
+	if (!cmd->Execute())
+	{
+		int x;
+		std::cin >> x;
+		return 1;
+	}
+
 	int x;
 	std::cin >> x;
+	return 0;
 }

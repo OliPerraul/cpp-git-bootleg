@@ -54,7 +54,8 @@ struct IndexEntry
 
 	IndexEntry()
 	{
-		Word2 buffer; buffer.n = 0;
+		Word2 buffer;
+		buffer.n = 0;
 		for (int i = 0; i < numFields; i++)
 		{
 			fields.push_back(buffer);
@@ -64,12 +65,13 @@ struct IndexEntry
 
 	};
 
-	IndexEntry(RawData header) {
+	IndexEntry(const RawData& header) {
 
 		Word2 buffer;
 		for (int i = 0; i < numFields; i++)
 		{
-			memcpy(buffer.c, header.data() + 32 * i, 32);
+			buffer.n = 0;
+			std::copy(header.data()+i, header.data()+i+4, buffer.c);
 			fields.push_back(buffer);
 		}
 
@@ -113,7 +115,6 @@ public:
 
 		return false;
 	}
-
 
 	boost::filesystem::path RepoDirectory()
 	{

@@ -20,9 +20,13 @@
 static const char* DirCacheSignature = "DIRC";
 static const size_t IndexFormatVersion = 2;
 static const size_t HeaderLength = 12;
-static const size_t EntryLength = 59;
-static const size_t EntryHeaderLength = 10;
+
+static const size_t EntryHeaderLength = 40;
 static const size_t Sha1Size = 20;
+static const size_t FlagsLength = 2;
+// total
+static const size_t BaseEntryLength = 52;
+
 
 bool GitusService::HashObject(const RawData& object, ObjectHashType type, bool write, RawData& sha1)
 {
@@ -115,10 +119,11 @@ bool GitusService::WriteIndex(const std::map<std::string, IndexEntry>& entries)
 		// Add path
 		for (int j = 0; j < entry->path.size(); j++)
 			entriesData.push_back(entry->path[j]);
-
+		entriesData.push_back(0);//null terminate the path
+		
 		// Add padding
-		auto pathOffset = ((EntryLength + entry->path.size() + 8) / 8) * 8;
-		auto paddingLength = pathOffset - EntryLength - entry->path.size();
+		size_t pathOffset = ((BaseEntryLength + entry->path.size() + 8) / 8) * 8;
+		auto paddingLength = pathOffset - BaseEntryLength - entry->path.size();
 		for (int j = 0; j < entry->path.size(); j++)
 			entriesData.push_back(0);
 	}
@@ -130,9 +135,9 @@ bool GitusService::WriteIndex(const std::map<std::string, IndexEntry>& entries)
 	for (int j = 0; j < 4; j++)
 		data.push_back(DirCacheSignature[j]);
 
-	// Format
-	Word version; version.n = IndexFormatVersion;
-	for (int j = 0; j < 2; j++)
+	// Version number
+	Word2 version; version.n = IndexFormatVersion;
+	for (int j = 0; j < 4; j++)
 		data.push_back(version.c[j]);
 
 	// Number of entries
@@ -141,7 +146,7 @@ bool GitusService::WriteIndex(const std::map<std::string, IndexEntry>& entries)
 		data.push_back(numEntries.c[j]);
 
 	// Concat entries
-	data.insert(data.end(), entriesData.begin(), entriesData.end());
+	copy(entriesData.begin(), entriesData.end(), back_inserter(data));
 
 	RawData digest;
 	Utils::Sha1(data, digest);
@@ -149,7 +154,7 @@ bool GitusService::WriteIndex(const std::map<std::string, IndexEntry>& entries)
 	filesystem::ofstream ofs{ IndexFile() };
 
 	// Concat digest
-	data.insert(data.end(), digest.begin(), digest.end());
+	copy(digest.begin(), digest.end(), back_inserter(data));
 
 	ofs.write(reinterpret_cast<char*>(data.data()), data.size()*sizeof(unsigned char));
 
@@ -161,7 +166,6 @@ bool GitusService::ReadIndex(std::map<std::string, IndexEntry>& entries)
 {
 	using namespace std;
 	using namespace boost;
-
 
 	if (filesystem::exists(IndexFile()))
 	{
@@ -176,35 +180,43 @@ bool GitusService::ReadIndex(std::map<std::string, IndexEntry>& entries)
 			return false;
 		}
 
-		RawData indexEntries(content.begin()+HeaderLength, data.end());
+		RawData indexEntries(content.begin() + HeaderLength, content.end());
 
 		int i = 0;
-		while (i + EntryLength < indexEntries.size())
+		while (i + BaseEntryLength < indexEntries.size())
 		{
-			RawData entryContent(indexEntries.begin() + i, indexEntries.begin() + i + EntryLength);
-			RawData entryHeader(entryContent.begin(), entryContent.begin() + EntryHeaderLength);
+			RawData remainingEntriesContent(indexEntries.begin() + i, indexEntries.end());
+			RawData entryHeader(remainingEntriesContent.begin(), remainingEntriesContent.begin() + EntryHeaderLength);
 
 			IndexEntry entry(entryHeader);
+			size_t shaEndPos = EntryHeaderLength + Sha1Size;
 			entry.sha1 = RawData(
-				entryContent.begin() + EntryHeaderLength, 
-				entryContent.begin() + EntryHeaderLength + Sha1Size);
+				remainingEntriesContent.begin() + EntryHeaderLength, 
+				remainingEntriesContent.begin() + shaEndPos);
 
+			size_t flagsEndPos = shaEndPos + FlagsLength;
 			RawData flags(
-				entryContent.begin() + 50, 
-				entryContent.begin() + 50 + 5);
-			memcpy(entry.flags.c, flags.data(), flags.size());
+				remainingEntriesContent.begin() + shaEndPos,
+				remainingEntriesContent.begin() + flagsEndPos);
 
+			copy(&flags.data()[0], &flags.data()[2], entry.flags.c);
+
+			// Find potential range for a path over remaining bits
 			RawData possiblePathRange(
-				indexEntries.begin() + 55,
+				indexEntries.begin() + flagsEndPos,
 				indexEntries.end());
 
-			auto pos = std::find(indexEntries.begin() + 55, indexEntries.end(), '\0');
-			auto path = RawData(indexEntries.begin() + 55, pos);
+			// Find null terminated string
+
+			auto pos = std::find(indexEntries.begin() + flagsEndPos, indexEntries.end(), '\0');
+			
+			auto path = RawData(indexEntries.begin() + flagsEndPos, pos);
+
 			copy(path.begin(), path.end(), back_inserter<string>(entry.path));
 
 			entries.insert(make_pair(entry.path, entry));
 
-			auto currentEntryLength = ((EntryLength + entry.path.size() + 8) / 8) * 8;
+			auto currentEntryLength = ((BaseEntryLength + entry.path.size() + 8) / 8) * 8;
 			i += currentEntryLength;
 		}
 	}
@@ -220,7 +232,7 @@ bool GitusService::HashCommitTree(RawData& treeHash) {
 
 	auto entries = map<string, IndexEntry>();
 
-	if (GitusService::ReadIndex(entries))
+	if (!GitusService::ReadIndex(entries))
 	{
 		// Error occured
 		return false;
@@ -232,6 +244,7 @@ bool GitusService::HashCommitTree(RawData& treeHash) {
 	}
 
 	RawData treeEntries;
+
 	// each 'line' in a tree object is in the '<mode><space><path>' format
 	// then a NUL byte, then the binary SHA-1 hash.
 	for (auto it = entries.begin(); it != entries.end(); it++)
