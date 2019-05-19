@@ -1,9 +1,10 @@
 
 #include <memory>
 #include <iostream>
-#include <ctime>
 
 #include <boost/filesystem.hpp>
+#include "boost/date_time/posix_time/posix_time.hpp"
+#include "boost/date_time/posix_time/conversion.hpp"
 
 #include "commands.h"
 #include "utils.h"
@@ -27,19 +28,26 @@ bool InitCommand::Execute() {
 	using namespace std;
 	using namespace boost;
 
+	string msg;
+	// Reinitialize the repository
 	if (filesystem::exists(GitusService::NewGitusDirectory()))
 	{
 		boost::filesystem::remove(_gitus->IndexFile());
 		boost::filesystem::remove(_gitus->ObjectsDirectory());
 		Init();
-		cout << "Reinitialized existing Git repository in " << GitusService::NewGitusDirectory() << endl;
+		msg = "Reinitialized existing Git repository in ";
 	}
+	// Create new repository
 	else
 	{
 		Init();
-		cout << "Initialized empty Git repository in " << GitusService::NewGitusDirectory() << endl;
+		msg = "Initialized empty Git repository in ";
 	}
 
+	_gitus->CacheCurrentGitusDirectory();
+	msg += _gitus->RepoDirectory().string();
+
+	cout << msg << endl;
 	return true;
 }
 
@@ -97,48 +105,71 @@ bool AddCommand::Execute() {
 
 bool CommitCommand::Execute() {
 
+	using namespace std;
+	using namespace boost::posix_time;
+
 	if (!BaseCommand::Execute())
 		return false;
 
-	RawData commitObject;
-	if(_gitus->HashCommitTree(commitObject))
-	if (treeHash == "") {
-		std::cout << "Add file[s] to staging before committing..." << std::endl;
+	RawData directoryTreeObject;
+	if(_gitus->HashCommitTree(directoryTreeObject))
+	{
+		// Error occured, return
 		return false;
 	}
 
+	stringstream content;
 
-	//If current tree exist => it's current master..
-	if (_gitus->CheckIfGitObjectExist(treeHash)) {
-		std::cout << "Add file[s] to staging before committing..." << std::endl;
-		return false;
-	}
-	commitObject += "tree"+ ' ' + treeHash + '\n';
-	// parent tree hash
+	// Add tree information
+	content << "tree ";
+	content.write(
+		reinterpret_cast<char*>(directoryTreeObject.data()), 
+		directoryTreeObject.size() * sizeof(unsigned char));
+
+	// Add parent commit object information
 	if (_gitus->HasParentTree()) {
-		auto parentTreeHash = _gitus->ParentTreeHash();
-		commitObject += "parent" + ' '+ commitObject + '\n';
+		RawData localMaster;
+		_gitus->LocalMasterHash(localMaster);
+		content << '\n';
+		content << "parent ";
+		content.write(
+			reinterpret_cast<char*>(localMaster.data()),
+			directoryTreeObject.size() * sizeof(unsigned char));
 	}
-	auto posxTime = std::time(0);
 
-	auto author = this->GenerateAuthorCommit(posxTime);
-	commitObject += author + "\n";
+	// Add author information
+	content << '\n';
+	time_t utcTime = to_time_t(second_clock::universal_time());
+	string timezone = "+0000";	
+	content << "author " << _author << utcTime << timezone;
 
-	auto committer = this->GenerateCommiterCommit(posxTime);
-	commitObject += committer + "\n";
+	// Add commiter information (Simplified: same as author)
+	content << '\n';
+	content << "author " << _author << _email << utcTime << timezone;
+
+	// Add linebreak as per the specification
+	content << '\n';
+
+	// Add the message
+	content << '\n';
+	content << _msg;
+
+	RawData commitObject(
+		(std::istreambuf_iterator<char>(content)),
+		(std::istreambuf_iterator<char>()));
+
+	// Get hash representation
+	RawData commitHash;
+	_gitus->HashObject(commitObject, GitusService::Commit, true, commitHash);
+	commitHash.push_back('\n');
+
+	// Write commit representation to master file
+	boost::filesystem::ofstream ofs{ _gitus->MasterFile() };
+	ofs.write(reinterpret_cast<char*>(commitHash.data()), commitHash.size()*sizeof(unsigned char));
 	
-	//double \n before msg, git spec
-	commitObject += "\n";
-	commitObject += this->_msg + "\n";
-
-	auto headSha1 = _gitus->HashObject(commitObject, GitusService::Commit);
-	headSha1 += "\n";
-
-	auto masterPath = _gitus->MasterFile();
-	boost::filesystem::ofstream ofs{ masterPath };
-	ofs << headSha1;
-	std::cout << "committed to branch master with commit " + headSha1;
-
+	string commitHexString;
+	Utils::Sha1String(commitObject, commitHexString);
+	std::cout << "committed to branch master with commit " + commitHexString.substr(0, 7);
 	return true;
 }
 

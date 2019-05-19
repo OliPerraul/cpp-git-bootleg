@@ -5,6 +5,8 @@
 #include <memory>
 #include <vector>
 #include <sstream>
+#include <ctime>
+#include <iomanip>
 
 #include <boost/uuid/uuid.hpp>
 #include <boost/uuid/detail/sha1.hpp>
@@ -42,7 +44,7 @@ private:
 public:
 
 	// Returns SHA1 as binrary
-	static std::shared_ptr<RawData> Sha1(RawData object)
+	static bool Sha1(RawData object, RawData& shaHash)
 	{
 		using namespace std;
 
@@ -50,21 +52,19 @@ public:
 		sha1.process_bytes(object.data(), sizeof(char)*object.size());
 		unsigned int hash[5];
 		sha1.get_digest(hash);
-
-		auto data = shared_ptr<RawData>(new RawData);
 		
 		for (int i = 0; i < 5; i++)
 		{
 			Word2 val; val.n = hash[i];
-			copy(&val.c[0], &val.c[4], back_inserter(data));
+			copy(&val.c[0], &val.c[4], back_inserter(shaHash));
 		}
 
-		return data;
+		return true;
 	};
 
 
 	// Returns SHA1 as Hex string
-	static std::string Sha1String(RawData object)
+	static bool Sha1String(RawData object, std::string& sha)
 	{
 		using namespace std;
 
@@ -82,7 +82,8 @@ public:
 			ss << std::hex << hash[i];
 		}
 
-		return ss.str();
+		sha = ss.str();
+		return true;
 	};
 
 	// Compression code from
@@ -118,7 +119,8 @@ public:
 	static RawData ReadBytes(std::string filename)
 	{
 		std::ifstream ifs(filename);
-		RawData content((std::istreambuf_iterator<char>(ifs)),
+		RawData content(
+			(std::istreambuf_iterator<char>(ifs)),
 			(std::istreambuf_iterator<char>()));
 		return content;
 	}

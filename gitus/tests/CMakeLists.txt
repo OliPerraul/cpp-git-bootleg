@@ -5,7 +5,7 @@ set(Boost_USE_STATIC_LIBS ON) # operraul: Added this line
 set(Boost_USE_STATIC_LIBS ON) 
 
 
-find_package(Boost REQUIRED COMPONENTS unit_test_framework filesystem zlib iostreams)
+find_package(Boost REQUIRED COMPONENTS unit_test_framework filesystem zlib iostreams date_time)
 
 add_executable(gittests dummytest.cpp ../utils.h ../commands.h ../commands.cpp ../gitus_service.h ../gitus_service.cpp)
 

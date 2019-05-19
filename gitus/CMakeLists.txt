@@ -25,7 +25,7 @@ set( Boost_USE_MULTITHREADED ON )
 # See https://stackoverflow.com/questions/18583800/cmake-error-the-following-boost-libraries-could-not-be-found
 add_definitions(-DBOOST_ALL_NO_LIB)
 
-find_package(Boost REQUIRED COMPONENTS program_options filesystem zlib iostreams)
+find_package(Boost REQUIRED COMPONENTS program_options filesystem zlib iostreams date_time)
 message("boost lib: ${Boost_LIBRARIES}")
 
 add_executable(gitus commands.h commands.cpp utils.h gitus_service.h gitus_service.cpp gitus.cpp)

@@ -61,7 +61,7 @@ BOOST_AUTO_TEST_CASE(Add)
 	//Arrange
 	auto fileName = "testFile1.txt";
 	CreateFile(fileName, "random text");
-	auto file = Utils::ReadFile(fileName);
+	auto file = Utils::ReadBytes(fileName);
 	
 	AddCommand* add = new AddCommand(gitus, fileName);
 	auto filePath = GetFileObjPath(fileName);
@@ -119,14 +119,23 @@ void CreateFile(std::string fileName, std::string content) {
 	ofs << content + "\0";
 }
 
+// Retrieve the file path by reading the object file
 boost::filesystem::path GetFileObjPath(std::string fileName) {
+	
+	using namespace std;
+	
 	GitusService gitus;
 
-	auto fileContent = Utils::ReadFile(fileName);
-	auto fileHash = gitus.HashObject(fileContent, GitusService::Blob, false);
-	auto fileDirHead = fileHash.substr(0, 2);
-	auto fileDirBody = fileHash.substr(2, std::string::npos);
+	auto fileContent = Utils::ReadBytes(fileName);
+	RawData fileHash;
+	gitus.HashObject(fileContent, GitusService::Blob, false, fileHash);
+	
+	stringstream ss;
+	ss << hex << fileHash.data();
+	string shaString = ss.str();
+	
 	auto objDir = gitus.ObjectsDirectory();
-	auto filePath = objDir / fileDirHead / fileDirBody;
+
+	auto filePath = objDir / shaString.substr(0, 2) / shaString.substr(2);
 	return filePath;
 }

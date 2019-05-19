@@ -93,7 +93,7 @@ public:
 
 	static boost::filesystem::path NewGitusDirectory()
 	{
-		return boost::filesystem::current_path() / ".git/";
+		return boost::filesystem::current_path() / ".git" / "";
 	}
 
 	// Iterate over directories from current to find the '.git' directory
@@ -132,28 +132,27 @@ public:
 
 	boost::filesystem::path RefsDirectory()
 	{
-		return _currentGitusDirectory / "refs/";
+		return _currentGitusDirectory / "refs" / "";
 	}
 
 	boost::filesystem::path HeadsDirectory()
 	{
-		return _currentGitusDirectory / "refs/heads/";
+		return _currentGitusDirectory / "refs" / "heads" / "";
 	}
 
 	boost::filesystem::path MasterFile()
 	{
-		return _currentGitusDirectory / "refs/heads/master";
+		return _currentGitusDirectory / "refs" / "heads" / "master" / "";
 	}
 
 	boost::filesystem::path ObjectsDirectory()
 	{
-		return _currentGitusDirectory / "objects/";
+		return _currentGitusDirectory / "objects" / "";
 	} 
 
 	bool HashObject(const RawData& object, ObjectHashType type, bool write, RawData& sha1);
 
-
-	bool WriteIndex(const std::unique_ptr<std::map<std::string, IndexEntry>>& entries);
+	bool WriteIndex(const std::map<std::string, IndexEntry>& entries);
 
 	bool ReadIndex(std::map<std::string, IndexEntry>& entries);
 
@@ -161,10 +160,9 @@ public:
 
 	bool HasParentTree();
 
-	bool ParentTreeHash(RawData& hash);
+	bool LocalMasterHash(RawData& hash);
 
-	bool CheckIfGitObjectExist(RawData& hash);
-
+	bool ObjectExists(RawData hash);
 };
 
 

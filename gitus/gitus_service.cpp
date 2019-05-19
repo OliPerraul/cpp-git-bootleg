@@ -61,7 +61,8 @@ bool GitusService::HashObject(const RawData& object, ObjectHashType type, bool w
 
 	// sha1 string hex used for object path
 	// 20 bytes returned as 40 hex characters
-	auto sha1String = Utils::Sha1String(content);
+	string sha1String;
+	Utils::Sha1String(content, sha1String);
 	if (write)
 	{
 		std::string first = sha1String.substr(0, 2);
@@ -80,18 +81,13 @@ bool GitusService::HashObject(const RawData& object, ObjectHashType type, bool w
 		}
 	}
 
-	// Return full sha binary
-	auto sha1 = Utils::Sha1(content);
+	// populate full sha binary
+	Utils::Sha1(content, sha1);
 	return true;
 }
 
-//// Not required by the assignment
-//std::string GitusService::ReadObject(std::string object)
-//{
-//
-//}
 
-bool GitusService::WriteIndex(const std::unique_ptr<std::map<std::string, IndexEntry>>& entries)
+bool GitusService::WriteIndex(const std::map<std::string, IndexEntry>& entries)
 {
 	using namespace std;
 	using namespace boost;
@@ -99,7 +95,7 @@ bool GitusService::WriteIndex(const std::unique_ptr<std::map<std::string, IndexE
 	RawData entriesData;
 
 	// The c++ standard guarantees that a map is iterated over in order of the keys
-	for (auto it = entries->begin(); it != entries->end(); it++)
+	for (auto it = entries.begin(); it != entries.end(); it++)
 	{
 		auto* entry = &it->second;
 
@@ -125,7 +121,6 @@ bool GitusService::WriteIndex(const std::unique_ptr<std::map<std::string, IndexE
 		auto paddingLength = pathOffset - EntryLength - entry->path.size();
 		for (int j = 0; j < entry->path.size(); j++)
 			entriesData.push_back(0);
-
 	}
 
 	RawData data;
@@ -141,23 +136,24 @@ bool GitusService::WriteIndex(const std::unique_ptr<std::map<std::string, IndexE
 		data.push_back(version.c[j]);
 
 	// Number of entries
-	Word2 numEntries; numEntries.n = entries->size();
+	Word2 numEntries; numEntries.n = entries.size();
 	for (int j = 0; j < 4; j++)
 		data.push_back(numEntries.c[j]);
-
-	stringstream data;
 
 	// Concat entries
 	data.insert(data.end(), entriesData.begin(), entriesData.end());
 
-	auto digest = Utils::Sha1(data);
+	RawData digest;
+	Utils::Sha1(data, digest);
 
 	filesystem::ofstream ofs{ IndexFile() };
 
 	// Concat digest
-	data.insert(data.end(), entriesData.begin(), entriesData.end());
+	data.insert(data.end(), digest.begin(), digest.end());
 
-	ofs << data.data();
+	ofs.write(reinterpret_cast<char*>(data.data()), data.size()*sizeof(unsigned char));
+
+	return true;
 
 };
 
@@ -173,8 +169,9 @@ bool GitusService::ReadIndex(std::map<std::string, IndexEntry>& entries)
 		RawData digest(data.end() - Sha1Size, data.end());
 		RawData content(data.begin(), data.end() - Sha1Size);
 
-		auto contentHash = Utils::Sha1(content);
-		if (*contentHash != digest) {
+		RawData contentHash;
+		Utils::Sha1(content, contentHash);
+		if (contentHash != digest) {
 			std::exception("fatal: Index file is corrupted.");
 			return false;
 		}
@@ -230,7 +227,7 @@ bool GitusService::HashCommitTree(RawData& treeHash) {
 	}
 	else if (entries.empty())
 	{
-		std::cout << "Add file[s] to staging before committing..." << std::endl;
+		std::cout << "Your branch is up to date with 'origin/master'" << std::endl;
 		return false;
 	}
 
@@ -268,19 +265,25 @@ bool GitusService::HasParentTree() {
 	return hashParent;
 }
 
-bool GitusService::ParentTreeHash(std::string hash) {
-	auto parenTreePath = MasterFile();
-	auto parentTreeData = Utils::ReadBytes(parenTreePath.string());
-	return parentTreeData;
-
+bool GitusService::LocalMasterHash(RawData& hash) {
+	// Get current commit hash of local master branch
+	hash = Utils::ReadBytes(MasterFile().string());
+	return true;
 }
 
-bool GitusService::CheckIfGitObjectExist(std::string hash) {
-	std::string first = hash.substr(0, 2);
-	std::string last = hash.substr(2, std::string::npos);
+bool GitusService::ObjectExists(RawData hash) {
 
-	auto filePath = ObjectsDirectory()
-		/ first;
+	using namespace std;
+
+	stringstream hexadecimals;
+	for (int i = 0; i < hash.size(); i++)
+		hexadecimals << hex << hash[i];
+	
+	std::string first = hexadecimals.str().substr(0, 2);
+	std::string last = hexadecimals.str().substr(2, std::string::npos);
+
+	auto filePath = ObjectsDirectory() / first;
+
 	return boost::filesystem::exists(filePath / last);
 }
 
