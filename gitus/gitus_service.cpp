@@ -28,40 +28,14 @@ static const size_t FlagsLength = 2;
 static const size_t BaseEntryLength = 52;
 
 
+
 bool GitusService::HashObject(const RawData& object, ObjectHashType type, bool write, RawData& sha1)
 {
 	using namespace std;
 	using namespace boost;
 	namespace ios = iostreams;
 
-	RawData header;
-	string t;
-	switch (type)
-	{
-	case GitusService::Blob:
-		t = "blob";
-		break;
-	case GitusService::Commit:
-		t = "commit";
-		break;
-	case GitusService::Tree:
-		t = "tree";
-		break;
-	default:
-		break;
-	}
-
-	// add the type
-	copy(t.begin(), t.end(), std::back_inserter(header));
-	
-	// add the size
-	Word2 size; size.n = object.size();
-	copy(&size.c[0], &(size.c[4]), back_inserter(header));
-
-	RawData content;
-
-	std::copy(header.begin(), header.end(), std::back_inserter(content));
-	std::copy(object.begin(), object.end(), std::back_inserter(content));
+	RawData content = CreateContentData(object, type);
 
 	// sha1 string hex used for object path
 	// 20 bytes returned as 40 hex characters
@@ -88,6 +62,43 @@ bool GitusService::HashObject(const RawData& object, ObjectHashType type, bool w
 	// populate full sha binary
 	Utils::Sha1(content, sha1);
 	return true;
+}
+
+
+RawData GitusService::CreateContentData(const RawData& object, ObjectHashType type) {
+	auto header = CreateHeaderData(type, object);
+	RawData content;
+	std::copy(header.begin(), header.end(), std::back_inserter(content));
+	std::copy(object.begin(), object.end(), std::back_inserter(content));
+	return content;
+}
+
+RawData GitusService::CreateHeaderData(GitusService::ObjectHashType type, const RawData & object)
+{
+	std::string t;
+	RawData header;
+	switch (type)
+	{
+	case GitusService::Blob:
+		t = "blob";
+		break;
+	case GitusService::Commit:
+		t = "commit";
+		break;
+	case GitusService::Tree:
+		t = "tree";
+		break;
+	default:
+		break;
+	}
+
+	// add the type
+	copy(t.begin(), t.end(), std::back_inserter(header));
+
+	// add the size
+	Word2 size; size.n = object.size();
+	copy(&size.c[0], &(size.c[4]), back_inserter(header));
+	return header;
 }
 
 
@@ -124,7 +135,7 @@ bool GitusService::WriteIndex(const std::map<std::string, IndexEntry>& entries)
 		// Add padding
 		size_t pathOffset = ((BaseEntryLength + entry->path.size() + 8) / 8) * 8;
 		auto paddingLength = pathOffset - BaseEntryLength - entry->path.size();
-		for (int j = 0; j < entry->path.size(); j++)
+		for (int j = 0; j < paddingLength; j++)
 			entriesData.push_back(0);
 	}
 
@@ -225,25 +236,25 @@ bool GitusService::ReadIndex(std::map<std::string, IndexEntry>& entries)
 };
 
 
-bool GitusService::HashCommitTree(RawData& treeHash) {
+RawData GitusService::HashCommitTree() {
 
 	using namespace std;
 	using namespace boost;
 
 	auto entries = map<string, IndexEntry>();
+	RawData treeEntries;
 
 	if (!GitusService::ReadIndex(entries))
 	{
 		// Error occured
-		return false;
+		return treeEntries;
 	}
 	else if (entries.empty())
 	{
 		std::cout << "Your branch is up to date with 'origin/master'" << std::endl;
-		return false;
+		return treeEntries;
 	}
 
-	RawData treeEntries;
 
 	// each 'line' in a tree object is in the '<mode><space><path>' format
 	// then a NUL byte, then the binary SHA-1 hash.
@@ -267,14 +278,13 @@ bool GitusService::HashCommitTree(RawData& treeHash) {
 		copy(entry->sha1.begin(), entry->sha1.end(), back_inserter(treeEntries));	
 	}
 
-	GitusService::HashObject(treeEntries, GitusService::Tree, true, treeHash);
-	return true;
+	return treeEntries;
 }
 
 bool GitusService::HasParentTree() {
 	auto parentTreePath = MasterFile();
 	auto masterSize = boost::filesystem::file_size(parentTreePath);
-	auto hashParent = masterSize == 0;
+	auto hashParent = masterSize > 0;
 	return hashParent;
 }
 
@@ -284,16 +294,12 @@ bool GitusService::LocalMasterHash(RawData& hash) {
 	return true;
 }
 
-bool GitusService::ObjectExists(RawData hash) {
+bool GitusService::ObjectExists(std::string sha1String) {
 
 	using namespace std;
 
-	stringstream hexadecimals;
-	for (int i = 0; i < hash.size(); i++)
-		hexadecimals << hex << hash[i];
-	
-	std::string first = hexadecimals.str().substr(0, 2);
-	std::string last = hexadecimals.str().substr(2, std::string::npos);
+	std::string first = sha1String.substr(0, 2);
+	std::string last = sha1String.substr(2, std::string::npos);
 
 	auto filePath = ObjectsDirectory() / first;
 

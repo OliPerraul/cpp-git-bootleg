@@ -54,27 +54,105 @@ BOOST_AUTO_TEST_CASE(InitNormal)
 	CleanUp();
 }
 
-BOOST_AUTO_TEST_CASE(Add)
+BOOST_AUTO_TEST_CASE(AddSingleFile)
 {
 	auto gitus = std::shared_ptr<GitusService>(new GitusService);
 
 	//Arrange
 	auto fileName = "testFile1.txt";
 	CreateFile(fileName, "random text");
-	auto file = Utils::ReadBytes(fileName);
-	
-	AddCommand* add = new AddCommand(gitus, fileName);
-	auto filePath = GetFileObjPath(fileName);
 
+	auto file = Utils::ReadBytes(fileName);
+
+	AddCommand* add = new AddCommand(gitus, fileName);
+
+	auto filePath1 = GetFileObjPath(fileName);
+
+
+	InitCommand* init = new InitCommand(gitus);
+	CommitCommand* commit = new CommitCommand(gitus, "commit", "me", "me@ne.com");
+	init->Execute();
 	//Act
 	add->Execute();
-
+	commit->Execute();
+	commit->Execute();
 	//Assert
-	auto fileObjectCreated = boost::filesystem::exists(filePath);
-	BOOST_CHECK(fileObjectCreated);
+	auto fileObjectCreated1 = boost::filesystem::exists(filePath1);
+	auto indexCreated = boost::filesystem::file_size(gitus->IndexFile()) > 0;
+	BOOST_CHECK(fileObjectCreated1);
+	BOOST_CHECK(indexCreated);
+
 
 	CleanUp();
 	DeleteFile(fileName);
+}
+
+//BOOST_AUTO_TEST_CASE(AddSingleFile)
+//{
+//	auto gitus = std::shared_ptr<GitusService>(new GitusService);
+//
+//	//Arrange
+//	auto fileName = "testFile1.txt";
+//	CreateFile(fileName, "random text");
+//
+//	auto file = Utils::ReadBytes(fileName);
+//
+//	AddCommand* add = new AddCommand(gitus, fileName);
+//
+//	auto filePath1 = GetFileObjPath(fileName);
+//
+//
+//	InitCommand* init = new InitCommand(gitus);
+//	init->Execute();
+//	//Act
+//	add->Execute();
+//
+//	//Assert
+//	auto fileObjectCreated1 = boost::filesystem::exists(filePath1);
+//	auto indexCreated = boost::filesystem::file_size(gitus->IndexFile()) > 0;
+//	BOOST_CHECK(fileObjectCreated1);
+//	BOOST_CHECK(indexCreated);
+//
+//
+//	CleanUp();
+//	DeleteFile(fileName);
+//}
+
+BOOST_AUTO_TEST_CASE(AddMultipleFiles)
+{
+	auto gitus = std::shared_ptr<GitusService>(new GitusService);
+
+	//Arrange
+	auto fileName = "testFile1.txt";
+	auto fileName2 = "testFile21.txt";
+	CreateFile(fileName, "random text");
+	CreateFile(fileName2, "randodasddsadasdsdsam text");
+
+	auto file = Utils::ReadBytes(fileName);
+	
+	AddCommand* add = new AddCommand(gitus, fileName);
+	AddCommand* add2 = new AddCommand(gitus, fileName2);
+
+	auto filePath1 = GetFileObjPath(fileName);
+	auto filePath2 = GetFileObjPath(fileName2);
+
+
+	InitCommand* init = new InitCommand(gitus);
+	init->Execute();
+	//Act
+	add->Execute();
+	add2->Execute();
+
+	//Assert
+	auto fileObjectCreated1 = boost::filesystem::exists(filePath1);
+	auto fileObjectCreated2 = boost::filesystem::exists(filePath2);
+	BOOST_CHECK(fileObjectCreated1);
+	BOOST_CHECK(fileObjectCreated2);
+
+
+	CleanUp();
+	DeleteFile(fileName);
+	DeleteFile(fileName2);
 }
 
 /*
@@ -139,16 +217,13 @@ boost::filesystem::path GetFileObjPath(std::string fileName) {
 	
 	GitusService gitus;
 
-	auto fileContent = Utils::ReadBytes(fileName);
-	RawData fileHash;
-	gitus.HashObject(fileContent, GitusService::Blob, false, fileHash);
-	
-	stringstream ss;
-	ss << hex << fileHash.data();
-	string shaString = ss.str();
+	auto fileBytes = Utils::ReadBytes(fileName);
+	RawData fileContent = GitusService::CreateContentData(fileBytes, GitusService::ObjectHashType::Blob);
+	std::string sha1String;
+	Utils::Sha1String(fileContent, sha1String);
 	
 	auto objDir = gitus.ObjectsDirectory();
 
-	auto filePath = objDir / shaString.substr(0, 2) / shaString.substr(2);
+	auto filePath = GitusService::NewGitusDirectory() / objDir / sha1String.substr(0, 2) / sha1String.substr(2);
 	return filePath;
 }

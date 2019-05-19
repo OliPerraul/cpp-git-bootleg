@@ -157,13 +157,16 @@ public:
 
 	bool ReadIndex(std::map<std::string, IndexEntry>& entries);
 
-	bool HashCommitTree(RawData& hash);
+	RawData HashCommitTree();
 
 	bool HasParentTree();
 
 	bool LocalMasterHash(RawData& hash);
 
-	bool ObjectExists(RawData hash);
+	bool ObjectExists(std::string sha1String);
+	static RawData CreateContentData(const RawData& object, ObjectHashType type);
+	static RawData CreateHeaderData(GitusService::ObjectHashType type, const RawData & object);
+
 };
 
 

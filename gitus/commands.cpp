@@ -98,7 +98,7 @@ bool AddCommand::Execute() {
 
 	_gitus->WriteIndex(entries);
 
-	cout << "File '" << _pathspec << "' added to the index.";
+	cout << "File '" << _pathspec << "' added to the index." << std::endl;
 	return true;
 }
 
@@ -112,20 +112,33 @@ bool CommitCommand::Execute() {
 
 	if (!BaseCommand::Execute())
 		return false;
-
-	RawData directoryTreeObject;
-	if(!_gitus->HashCommitTree(directoryTreeObject))
+	
+	
+	auto currentTree = _gitus->HashCommitTree();
+	if (currentTree.empty())
 	{
 		// Error occured, return
 		return false;
 	}
 
-	stringstream content;
+	//Check to see if parent hash obj is same as current index
+	auto treeContent = _gitus->CreateContentData(currentTree, GitusService::Tree);
+	string treeStringHash;
+	Utils::Sha1String(treeContent, treeStringHash);
+	if(_gitus->ObjectExists(treeStringHash)) 
+	{
+		std::cout << "nothing to commit, working tree clean" << std::endl;
+		return false;
+	}
 
+	RawData directoryTreeObject;
+	_gitus->HashObject(currentTree, GitusService::Tree, true, directoryTreeObject);
+
+	stringstream content;
 	// Add tree information
 	content << "tree ";
 	content.write(
-		reinterpret_cast<char*>(directoryTreeObject.data()), 
+		reinterpret_cast<char*>(directoryTreeObject.data()),
 		directoryTreeObject.size() * sizeof(unsigned char));
 
 	// Add parent commit object information
@@ -176,7 +189,7 @@ bool CommitCommand::Execute() {
 	
 	string commitHexString;
 	Utils::Sha1String(commitObject, commitHexString);
-	std::cout << "committed to branch master with commit " + commitHexString.substr(0, 7);
+	std::cout << "committed to branch master with commit " + commitHexString.substr(0, 7) << std::endl;
 	return true;
 }
 
