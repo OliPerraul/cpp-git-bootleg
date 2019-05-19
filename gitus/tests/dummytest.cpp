@@ -40,7 +40,7 @@ BOOST_AUTO_TEST_CASE(InitNormal)
 	auto masterFileExist = boost::filesystem::exists(masterFile);
 
 	auto headFileSize = boost::filesystem::file_size(headFile);
-	auto masterFileSize = boost::filesystem::file_size(headFile);
+	auto masterFileSize = boost::filesystem::file_size(masterFile);
 
 	BOOST_CHECK(gitusDirExist);
 	BOOST_CHECK(objDirExist);
@@ -48,75 +48,50 @@ BOOST_AUTO_TEST_CASE(InitNormal)
 	BOOST_CHECK(headDirExist);
 	BOOST_CHECK(headFileExist);
 	BOOST_CHECK(masterFileExist);
-	BOOST_CHECK_EQUAL(headFileSize, 0);
+	BOOST_CHECK_EQUAL(headFileSize, 26);
 	BOOST_CHECK_EQUAL(masterFileSize, 0);
+
+	CleanUp();
+}
+
+BOOST_AUTO_TEST_CASE(InitArleadyInit)
+{
+	//Arrange
+	auto gitus = std::shared_ptr<GitusService>(new GitusService);
+	InitCommand* init = new InitCommand(gitus);
+
+	//Act
+	init->Execute();
+	auto res = init->Execute();
+
+	//Assert
+	BOOST_CHECK(res);
 
 	CleanUp();
 }
 
 BOOST_AUTO_TEST_CASE(AddSingleFile)
 {
-	auto gitus = std::shared_ptr<GitusService>(new GitusService);
-
 	//Arrange
+	auto gitus = std::shared_ptr<GitusService>(new GitusService);
 	auto fileName = "testFile1.txt";
 	CreateFile(fileName, "random text");
-
-	auto file = Utils::ReadBytes(fileName);
-
-	AddCommand* add = new AddCommand(gitus, fileName);
-
 	auto filePath1 = GetFileObjPath(fileName);
 
-
+	AddCommand* add = new AddCommand(gitus, fileName);
 	InitCommand* init = new InitCommand(gitus);
-	CommitCommand* commit = new CommitCommand(gitus, "commit", "me", "me@ne.com");
 	init->Execute();
 	//Act
 	add->Execute();
-	commit->Execute();
-	commit->Execute();
 	//Assert
 	auto fileObjectCreated1 = boost::filesystem::exists(filePath1);
 	auto indexCreated = boost::filesystem::file_size(gitus->IndexFile()) > 0;
 	BOOST_CHECK(fileObjectCreated1);
 	BOOST_CHECK(indexCreated);
 
-
 	CleanUp();
 	DeleteFile(fileName);
 }
-
-//BOOST_AUTO_TEST_CASE(AddSingleFile)
-//{
-//	auto gitus = std::shared_ptr<GitusService>(new GitusService);
-//
-//	//Arrange
-//	auto fileName = "testFile1.txt";
-//	CreateFile(fileName, "random text");
-//
-//	auto file = Utils::ReadBytes(fileName);
-//
-//	AddCommand* add = new AddCommand(gitus, fileName);
-//
-//	auto filePath1 = GetFileObjPath(fileName);
-//
-//
-//	InitCommand* init = new InitCommand(gitus);
-//	init->Execute();
-//	//Act
-//	add->Execute();
-//
-//	//Assert
-//	auto fileObjectCreated1 = boost::filesystem::exists(filePath1);
-//	auto indexCreated = boost::filesystem::file_size(gitus->IndexFile()) > 0;
-//	BOOST_CHECK(fileObjectCreated1);
-//	BOOST_CHECK(indexCreated);
-//
-//
-//	CleanUp();
-//	DeleteFile(fileName);
-//}
 
 BOOST_AUTO_TEST_CASE(AddMultipleFiles)
 {
@@ -127,17 +102,13 @@ BOOST_AUTO_TEST_CASE(AddMultipleFiles)
 	auto fileName2 = "testFile21.txt";
 	CreateFile(fileName, "random text");
 	CreateFile(fileName2, "randodasddsadasdsdsam text");
-
-	auto file = Utils::ReadBytes(fileName);
+	auto filePath1 = GetFileObjPath(fileName);
+	auto filePath2 = GetFileObjPath(fileName2);
 	
 	AddCommand* add = new AddCommand(gitus, fileName);
 	AddCommand* add2 = new AddCommand(gitus, fileName2);
-
-	auto filePath1 = GetFileObjPath(fileName);
-	auto filePath2 = GetFileObjPath(fileName2);
-
-
 	InitCommand* init = new InitCommand(gitus);
+
 	init->Execute();
 	//Act
 	add->Execute();
@@ -149,50 +120,176 @@ BOOST_AUTO_TEST_CASE(AddMultipleFiles)
 	BOOST_CHECK(fileObjectCreated1);
 	BOOST_CHECK(fileObjectCreated2);
 
+	CleanUp();
+	DeleteFile(fileName);
+	DeleteFile(fileName2);
+}
+
+BOOST_AUTO_TEST_CASE(AddSameFile)
+{
+	auto gitus = std::shared_ptr<GitusService>(new GitusService);
+
+	//Arrange
+	auto fileName = "testFile1.txt";
+	CreateFile(fileName, "random text");
+	auto filePath1 = GetFileObjPath(fileName);
+
+	AddCommand* add = new AddCommand(gitus, fileName);
+
+	InitCommand* init = new InitCommand(gitus);
+	init->Execute();
+	//Act
+	add->Execute();
+	auto res =add->Execute();
+
+	//Assert
+	BOOST_CHECK(!res);
+	
+	CleanUp();
+	DeleteFile(fileName);
+}
+BOOST_AUTO_TEST_CASE(AddNotExistingFile)
+{
+	auto gitus = std::shared_ptr<GitusService>(new GitusService);
+
+	//Arrange
+	auto fileName = "testFile1.txt";
+
+	AddCommand* add = new AddCommand(gitus, fileName);
+	InitCommand* init = new InitCommand(gitus);
+
+	init->Execute();
+	//Act
+	auto res = add->Execute();
+
+	//Assert
+	BOOST_CHECK(!res);
+	
+	CleanUp();
+	DeleteFile(fileName);
+}
+
+BOOST_AUTO_TEST_CASE(CommitBasic)
+{
+	//Arrange
+	auto gitus = std::shared_ptr<GitusService>(new GitusService);
+	auto gitusDir = GitusService::NewGitusDirectory();
+	auto masterFile = gitusDir / "refs/heads/master";
+
+	auto fileName = "testFile1.txt";
+	CreateFile(fileName, "random text");
+	auto filePath1 = GetFileObjPath(fileName);
+
+	AddCommand* add = new AddCommand(gitus, fileName);
+	InitCommand* init = new InitCommand(gitus);
+	CommitCommand* commit = new CommitCommand(gitus, "First Commit", "Me", "Me@yahoo.ca");
+
+	init->Execute();
+	add->Execute();
+	//Act
+	auto res = commit->Execute();
+
+	//Assert
+	auto masterFileSize = boost::filesystem::file_size(masterFile);
+
+	BOOST_CHECK(masterFileSize > 0);
+	BOOST_CHECK(res);
+
+	CleanUp();
+	DeleteFile(fileName);
+}
+
+BOOST_AUTO_TEST_CASE(CommitMultiple)
+{
+	//Arrange
+	auto gitus = std::shared_ptr<GitusService>(new GitusService);
+	auto gitusDir = GitusService::NewGitusDirectory();
+	auto masterFile = gitusDir / "refs/heads/master";
+
+	auto fileName = "testFile1.txt";
+	auto fileName2 = "testFile21.txt";
+	CreateFile(fileName, "random text");
+	CreateFile(fileName2, "randodasddsadasdsdsam text");
+	auto filePath1 = GetFileObjPath(fileName);
+	auto filePath2 = GetFileObjPath(fileName2);
+
+	AddCommand* add = new AddCommand(gitus, fileName);
+	AddCommand* add2 = new AddCommand(gitus, fileName2);
+
+	InitCommand* init = new InitCommand(gitus);
+	CommitCommand* commit = new CommitCommand(gitus, "First Commit", "Me", "Me@yahoo.ca");
+
+	init->Execute();
+	add->Execute();
+	//Act
+	commit->Execute();
+	add2->Execute();
+	auto res = commit->Execute();
+	//Assert
+	auto masterFileSize = boost::filesystem::file_size(masterFile);
+
+	BOOST_CHECK(masterFileSize > 0);
+	BOOST_CHECK(res);
 
 	CleanUp();
 	DeleteFile(fileName);
 	DeleteFile(fileName2);
 }
 
-/*
-TODO
-I checked that 
+BOOST_AUTO_TEST_CASE(CommitNoFile)
+{
+	//Arrange
+	auto gitus = std::shared_ptr<GitusService>(new GitusService);
+	auto gitusDir = GitusService::NewGitusDirectory();
+	auto masterFile = gitusDir / "refs/heads/master";
 
-git add oli.txt
->> added file oli.txt to index.
+	InitCommand* init = new InitCommand(gitus);
+	CommitCommand* commit = new CommitCommand(gitus, "First Commit", "Me", "Me@yahoo.ca");
 
-git add oli.txt
->> file oli.txt already in the index.
+	init->Execute();
+	//Act
+	auto res = commit->Execute();
 
-*/
+	//Assert
+	auto masterFileSize = boost::filesystem::file_size(masterFile);
+
+	BOOST_CHECK(masterFileSize == 0);
+	BOOST_CHECK(!res);
+
+	CleanUp();
+}
+
+BOOST_AUTO_TEST_CASE(CommitSameIndexAfterCommit)
+{
+	//Arrange
+	auto gitus = std::shared_ptr<GitusService>(new GitusService);
+	auto gitusDir = GitusService::NewGitusDirectory();
+	auto masterFile = gitusDir / "refs/heads/master";
+
+	auto fileName = "testFile1.txt";
+	CreateFile(fileName, "random text");
+	auto filePath1 = GetFileObjPath(fileName);
+
+	AddCommand* add = new AddCommand(gitus, fileName);
+	InitCommand* init = new InitCommand(gitus);
+	CommitCommand* commit = new CommitCommand(gitus, "First Commit", "Me", "Me@yahoo.ca");
+
+	init->Execute();
+	add->Execute();
+	//Act
+	commit->Execute();
+	auto res = commit->Execute();
 
 
-/*
+	//Assert
+	auto masterFileSize = boost::filesystem::file_size(masterFile);
 
-init
- -chacun de repo sont crer
- -init dans un deja init
- {m_pathname=L"C:\\Users\\zeroeagle1\\CMakeBuilds\\9ea20e7e-e12c-ff34-9a63-2204612524e4\\build\\x64-Debug\\tests\\.git/objects/e2\\b64f6bf69d2916af31f293da31c10d6a575a0b" }
+	BOOST_CHECK(masterFileSize > 0);
+	BOOST_CHECK(!res);
 
- add
- -/ob/xx/xxxxxxxx bien crer
- - index bien crer
- - add dun file deja ddd
- - add dun file existant pas
-
-commit
- - creation new commit obj/xx/xx
- - commit mais rien en staging
- - second commit
-
-other
---help
-- weird param inserted
-
-
-*/
-
+	CleanUp();
+	DeleteFile(fileName);
+}
 
 BOOST_AUTO_TEST_SUITE_END()
 

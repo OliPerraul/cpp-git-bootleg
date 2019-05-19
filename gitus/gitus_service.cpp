@@ -214,14 +214,14 @@ bool GitusService::ReadIndex(std::map<std::string, IndexEntry>& entries)
 
 			// Find potential range for a path over remaining bits
 			RawData possiblePathRange(
-				indexEntries.begin() + flagsEndPos,
-				indexEntries.end());
+				remainingEntriesContent.begin() + flagsEndPos,
+				remainingEntriesContent.end());
 
 			// Find null terminated string
 
-			auto pos = std::find(indexEntries.begin() + flagsEndPos, indexEntries.end(), '\0');
+			auto pos = std::find(remainingEntriesContent.begin() + flagsEndPos, remainingEntriesContent.end(), '\0');
 			
-			auto path = RawData(indexEntries.begin() + flagsEndPos, pos);
+			auto path = RawData(remainingEntriesContent.begin() + flagsEndPos, pos);
 
 			copy(path.begin(), path.end(), back_inserter<string>(entry.path));
 

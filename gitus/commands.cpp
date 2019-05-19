@@ -20,8 +20,12 @@ bool InitCommand::Init()
 	boost::filesystem::create_directory(_gitus->ObjectsDirectory());
 	boost::filesystem::create_directory(_gitus->RefsDirectory());
 	boost::filesystem::create_directory(_gitus->HeadsDirectory());
-	boost::filesystem::ofstream(_gitus->HeadFile().string());
-	boost::filesystem::ofstream(_gitus->MasterFile().string());
+	
+	auto masterFilePath = _gitus->MasterFile().string();
+	boost::filesystem::ofstream{ masterFilePath};
+	boost::filesystem::ofstream headFile{ _gitus->HeadFile().string()};
+	headFile << "ref: refs / heads / master";
+
 	return true;
 }
 
