@@ -56,7 +56,7 @@ https://www.youtube.com/watch?time_continue=17&v=zco5runaFWU
 
 GITLAB REMOTE
 ```
-git remote add origin https://depot.dinf.usherbrooke.ca/e19-igl601/eq20.git
+git remote add gitlab https://depot.dinf.usherbrooke.ca/e19-igl601/eq20.git
 git push gitlab
 ```
 
