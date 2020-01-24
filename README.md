@@ -1,3 +1,5 @@
+# Created our own bootleg version of git as a learnign experience
+
 * BOOST
 https://www.boost.org/users/download/
 How to install boost
