@@ -1,4 +1,4 @@
-# Created our own bootleg version of git as a learnign experience
+# Created our own bootleg version of git as a learning experience
 
 * BOOST
 https://www.boost.org/users/download/
